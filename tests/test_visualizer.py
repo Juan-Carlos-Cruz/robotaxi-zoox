@@ -1,14 +1,12 @@
 import sys
 import os
 
-# Agregar la carpeta raíz al path
-ruta_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, ruta_raiz)
+RUTA_RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, RUTA_RAIZ)
 
 from ui.visualizador import Visualizador
-from mundo.lectorMapa import leer_mapa
-from mundo.grid import Grid
-from algoritmosBusqueda.informada.algoritmoAestrella import a_estrella
+from mundo import Grid, leer_mapa
+from algoritmosBusqueda.informada.wrapper import busqueda_informada
 
 # ==================== PRUEBA DEL VISUALIZADOR ====================
 if __name__ == "__main__":
@@ -30,16 +28,16 @@ if __name__ == "__main__":
 
     # Ejecutar A*
     print("\n🔍 Ejecutando A*...")
-    resultado = a_estrella(grid, grid.inicio, grid.destino, grid.pasajeros)
+    resultado = busqueda_informada(grid, grid.inicio, grid.destino, grid.pasajeros, "a_estrella")
 
     if not resultado:
         print("❌ No se encontró solución")
         exit(1)
 
     print(f"✅ Solución encontrada. Costo: {resultado['costo']}")
-    print(f"Pasos: {len(resultado['camino'])}")
+    print(f"Pasos: {resultado['profundidad']}")
     print("\n🎬 Mostrando animación...")
 
-    # Crear visualizador y animar
     vis = Visualizador(grid, "Robotaxi Zoox - A*")
-    vis.animar_camino(resultado['camino'], delay=200)
+    resultado["tiempo"] = 0
+    vis.animar_camino(resultado["camino"], resultado, "a_estrella", delay=200)

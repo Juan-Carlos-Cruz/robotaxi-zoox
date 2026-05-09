@@ -1,11 +1,12 @@
-from mundo.grid import Grid
-from mundo.lectorMapa import leer_mapa
-from mundo.node import Node
-from algoritmosBusqueda.noinformada.busCostoUni import BusquedaCosto
-from algoritmosBusqueda.noinformada.busAmplitud import BusquedaAmplitud
-from algoritmosBusqueda.noinformada.busProfundidad import BusquedaProfundidad
-from algoritmosBusqueda.informada.algoritmoAestrella import a_estrella
-from algoritmosBusqueda.informada.algoritmoAvara import avara
+import os
+import sys
+
+RUTA_RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, RUTA_RAIZ)
+
+from mundo import Grid, Node, leer_mapa
+from algoritmosBusqueda.noinformada.wrapper import busqueda_no_informada
+from algoritmosBusqueda.informada.wrapper import busqueda_informada
 
 # 1. Cargar el mapa
 matriz = leer_mapa()
@@ -25,25 +26,20 @@ print(f"Celda (1,0): {grid.matriz[1][0]}")
 print(f"Celda (0,0): {grid.matriz[0][0]}")
 print(f"Es transitable (1,0): {grid.es_transitable(1,0)}")
 print(f"Vecinos del nodo inicial:")
-from mundo.node import Node
 nodo_prueba = Node(posicion=grid.inicio, pasajeros_recogidos=frozenset())
 for v in grid.get_vecinos(nodo_prueba):
     print(f"  {v.posicion}")
 
 
 # 4. Ejecutar BFS
-bfs       = BusquedaAmplitud(grid)
-resultado = bfs.buscar(nodo_inicial, pasajeros_totales)
+resultado = busqueda_no_informada(grid, nodo_inicial, pasajeros_totales, "bfs")
 
 
 # ejecutar por costo
-
-bcu = BusquedaCosto(grid)
-resultado2 = bcu.buscar(nodo_inicial, pasajeros_totales)
+resultado2 = busqueda_no_informada(grid, nodo_inicial, pasajeros_totales, "ucs")
 
 #Ejecutar por profundidad evitando ciclos
-dfs = BusquedaProfundidad(grid)
-resultado3 = dfs.buscar(nodo_inicial, pasajeros_totales)
+resultado3 = busqueda_no_informada(grid, nodo_inicial, pasajeros_totales, "dfs")
 
 
 # 5. Ver resultado
@@ -105,7 +101,7 @@ if __name__ == "__main__":
     print(f"Pasajeros: {grid.pasajeros}")
 
     # Ejecuta el algoritmo A*
-    resultado = a_estrella(grid, grid.inicio, grid.destino, grid.pasajeros)
+    resultado = busqueda_informada(grid, grid.inicio, grid.destino, grid.pasajeros, "a_estrella")
 
     # Muestra el resultado
     if resultado:
@@ -157,7 +153,7 @@ if __name__ == "__main__":
     print(f"Pasajeros: {grid.pasajeros}")
 
     # Ejecuta el algoritmo Avara
-    resultado = avara(grid, grid.inicio, grid.destino, grid.pasajeros)
+    resultado = busqueda_informada(grid, grid.inicio, grid.destino, grid.pasajeros, "avara")
 
     # Muestra el resultado
     if resultado:

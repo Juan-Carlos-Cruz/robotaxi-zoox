@@ -6,9 +6,7 @@ sys.path.insert(0, ruta_raiz)
 
 import pygame
 
-from mundo.grid import Grid
-from mundo.lectorMapa import leer_mapa
-from algoritmosBusqueda.informada.algoritmoAestrella import a_estrella
+from mundo import Grid
 
 
 # Colores en formato RGB
