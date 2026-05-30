@@ -52,6 +52,7 @@ def busqueda_informada(grid, inicio, destino, pasajeros, modo):
                 "costo": nodo.g,
                 "nodos_expandidos": nodos_expandidos,
                 "profundidad": nodo.profundidad,
+                "heuristica": nodo.h,
             }
 
         estado = (nodo.posicion, nodo.pasajeros_recogidos)

@@ -1,0 +1,328 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{fancyhdr}
+
+\geometry{margin=2.5cm}
+\setlength{\headheight}{15pt}
+\setstretch{1.15}
+\emergencystretch=2em
+\setlist[itemize]{topsep=4pt,itemsep=2pt}
+\setlist[enumerate]{topsep=4pt,itemsep=2pt}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue
+}
+
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue!60!black}\bfseries,
+    commentstyle=\color{green!40!black},
+    stringstyle=\color{orange!60!black},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{black!20},
+    backgroundcolor=\color{black!2},
+    tabsize=4
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Proyecto 1 - Robotaxi Zoox}
+\fancyhead[R]{Inteligencia Artificial}
+\fancyfoot[C]{\thepage}
+
+% Datos editables de la portada
+\newcommand{\universidad}{Universidad del Valle}
+\newcommand{\facultad}{Facultad de Ingeniería}
+\newcommand{\escuela}{Escuela de Ingeniería de Sistemas y Computación}
+\newcommand{\materia}{Inteligencia Artificial}
+\newcommand{\profesor}{Nombre del profesor}
+\newcommand{\estudiantes}{
+    Nombre del estudiante 1\\
+    Nombre del estudiante 2\\
+    Nombre del estudiante 3
+}
+
+\begin{document}
+\pagenumbering{gobble}
+
+\begin{titlepage}
+    \centering
+    {\Large \universidad \par}
+    \vspace{0.2cm}
+    {\large \facultad \par}
+    \vspace{0.2cm}
+    {\large \escuela \par}
+    \vspace{1.2cm}
+    {\Large \materia \par}
+    \vspace{1.8cm}
+    {\Huge \textbf{Proyecto 1} \par}
+    \vspace{0.5cm}
+    {\LARGE \textbf{Robotaxi Zoox} \par}
+    \vspace{2cm}
+
+    \begin{flushleft}
+        \textbf{Estudiantes:}\par
+        \estudiantes
+
+        \vspace{0.8cm}
+        \textbf{Profesor:}\par
+        \profesor\par
+
+        \vspace{0.8cm}
+        \textbf{Semestre:}\par
+        2026-I
+    \end{flushleft}
+
+    \vfill
+    {\large \today \par}
+\end{titlepage}
+
+\clearpage
+\pagenumbering{arabic}
+\tableofcontents
+\newpage
+
+\section{Descripción del problema}
+El proyecto plantea una versión avanzada del \textit{Robotaxi Zoox}, capaz de recoger múltiples pasajeros dentro de una ciudad modelada como una cuadrícula de \(10 \times 10\), para finalmente llevarlos a un único destino. Cada casilla del ambiente representa un tipo de elemento del mundo: vía libre, muro, punto de inicio, flujo vehicular alto, pasajero o destino.
+
+El vehículo solo puede desplazarse en las cuatro direcciones cardinales: arriba, abajo, izquierda y derecha. El costo del desplazamiento depende del tipo de casilla a la que se llega:
+
+\begin{itemize}
+    \item Vía libre, inicio, pasajero y destino tienen costo \(1\).
+    \item Flujo vehicular alto tiene costo \(7\).
+\end{itemize}
+
+Adicionalmente, si el robot entra a una casilla con pasajero, este se recoge automáticamente. El objetivo de búsqueda consiste en encontrar una secuencia de movimientos que recoja a todos los pasajeros y termine en el destino, respetando las restricciones del mapa y minimizando el criterio correspondiente según el algoritmo aplicado.
+
+\section{Resumen del proyecto}
+En este proyecto se desarrolló una aplicación interactiva que:
+
+\begin{itemize}
+    \item carga un mundo desde un archivo de texto;
+    \item representa gráficamente el mapa de la ciudad;
+    \item permite elegir algoritmos de búsqueda no informada e informada;
+    \item anima visualmente el recorrido encontrado;
+    \item muestra un reporte con profundidad, nodos expandidos, tiempo de cómputo, costo y, para la búsqueda informada, el valor heurístico del nodo solución.
+\end{itemize}
+
+La implementación actual organiza la lógica en módulos separados para el mundo, las búsquedas, la ejecución y la interfaz gráfica. Esta separación facilita la trazabilidad entre el modelo del problema, la estrategia de búsqueda y la visualización final.
+
+\section{Modelado del problema}
+\subsection{Representación del estado}
+Cada nodo del espacio de búsqueda se modela por medio de:
+
+\begin{itemize}
+    \item la posición actual del vehículo, representada como una tupla \((fila, columna)\);
+    \item el conjunto de pasajeros recogidos hasta el momento;
+    \item el costo acumulado \(g\);
+    \item la heurística \(h\), cuando el algoritmo la requiere;
+    \item un puntero al padre, para reconstruir el camino solución;
+    \item la profundidad del nodo.
+\end{itemize}
+
+La decisión de incluir el conjunto de pasajeros recogidos dentro del estado es esencial. Gracias a ello, dos nodos en la misma posición pueden considerarse distintos si difieren en los pasajeros ya recogidos. Esta decisión permite cumplir con el lineamiento del proyecto de \textbf{evitar ciclos}, pero al mismo tiempo \textbf{permitir devolverse} cuando el vehículo ya cambió su estado al recoger un pasajero.
+
+\subsection{Operadores}
+La expansión de nodos se realiza con cuatro movimientos posibles:
+\[
+(0,1),\ (-1,0),\ (1,0),\ (0,-1)
+\]
+que corresponden a derecha, arriba, abajo e izquierda, respectivamente. Solo se generan vecinos transitables; es decir, casillas válidas dentro del mapa y diferentes de muro.
+
+\subsection{Función de costo}
+La función de costo distingue entre dos tipos de tránsito:
+
+\begin{itemize}
+    \item flujo bajo: costo \(1\);
+    \item flujo alto: costo \(7\).
+\end{itemize}
+
+Por tanto, el costo acumulado de un nodo es la suma de los costos de las casillas a las que el vehículo ha ido entrando desde el estado inicial.
+
+\subsection{Condición de meta}
+Un nodo se considera meta si y solo si:
+\begin{enumerate}
+    \item la posición del vehículo coincide con el destino, y
+    \item el conjunto de pasajeros recogidos coincide con el conjunto total de pasajeros del mapa.
+\end{enumerate}
+
+\section{Algoritmos de búsqueda no informada}
+La implementación unifica amplitud, costo uniforme y profundidad evitando ciclos dentro de un mismo envoltorio en \texttt{algoritmosBusqueda/noinformada/wrapper.py}. La diferencia entre algoritmos está en la estructura de frontera y la forma de extraer el siguiente nodo.
+
+\subsection{Búsqueda en amplitud}
+La búsqueda en amplitud (\texttt{bfs}) usa una cola FIFO. Esto hace que primero se exploren los nodos de menor profundidad. Por construcción, encuentra soluciones con el menor número de pasos cuando todos los costos son uniformes.
+
+\subsection{Costo uniforme}
+La búsqueda de costo uniforme (\texttt{ucs}) usa una cola de prioridad ordenada por el costo acumulado \(g\). De este modo, el siguiente nodo a expandir siempre es el de menor costo total conocido hasta el momento.
+
+\subsection{Profundidad evitando ciclos}
+La búsqueda en profundidad (\texttt{dfs}) usa una pila LIFO. Como la estrategia profundiza rápidamente en una rama, se vuelve especialmente importante controlar los ciclos para evitar trayectorias infinitas o expansiones redundantes.
+
+\subsection{Cómo se evitan los ciclos en no informada}
+El control de ciclos se hace sobre el estado compuesto \((posicion, pasajeros\_recogidos)\). Esto significa que solo se descarta un nodo si vuelve exactamente a una posición con el mismo conjunto de pasajeros recogidos.
+
+\begin{lstlisting}[style=pythonstyle,caption={Control de ciclos en búsqueda no informada}]
+estado = (nodo.posicion, nodo.pasajeros_recogidos)
+
+if estado in visitados:
+    continue
+
+visitados.add(estado)
+\end{lstlisting}
+
+Esta decisión es particularmente importante en \texttt{dfs}. Si el vehículo vuelve a una casilla ya visitada pero ahora con más pasajeros recogidos, el estado ya no es el mismo y por tanto la expansión sí se permite. Esto implementa directamente la regla del proyecto: \textbf{evitar ciclos, pero dejar que el vehículo se devuelva después de recoger un pasajero}.
+
+\section{Algoritmos de búsqueda informada}
+La búsqueda informada se implementa en \texttt{algoritmosBusqueda/informada/wrapper.py}. Allí se soportan dos variantes: búsqueda avara y búsqueda A*.
+
+\subsection{Heurística utilizada}
+La heurística base es la distancia Manhattan:
+\[
+h_M((x_1, y_1), (x_2, y_2)) = |x_1 - x_2| + |y_1 - y_2|
+\]
+
+Sobre esa base, el proyecto define la función heurística de esta forma:
+
+\begin{itemize}
+    \item si el vehículo ya recogió a todos los pasajeros, la heurística es la distancia Manhattan desde la posición actual hasta el destino;
+    \item si todavía faltan pasajeros, la heurística es la distancia Manhattan al pasajero faltante más cercano.
+\end{itemize}
+
+En términos operativos:
+
+\begin{lstlisting}[style=pythonstyle,caption={Heurística implementada}]
+def calcular_heuristica(nodo, destino, pasajeros, meta_pasajeros):
+    if nodo.pasajeros_recogidos == meta_pasajeros:
+        return heuristica_manhattan(nodo.posicion, destino)
+
+    pasajeros_faltantes = [p for p in pasajeros if p not in nodo.pasajeros_recogidos]
+    return min(heuristica_manhattan(nodo.posicion, p) for p in pasajeros_faltantes)
+\end{lstlisting}
+
+\subsection{Búsqueda avara}
+La búsqueda avara prioriza únicamente la heurística \(h\). Es decir, siempre expande primero el nodo que parece más cercano a una meta intermedia según la estimación heurística.
+
+\[
+f(n) = h(n)
+\]
+
+Esta estrategia puede ser rápida en algunos casos, pero no garantiza optimalidad porque ignora el costo acumulado \(g\).
+
+\subsection{Búsqueda A*}
+La búsqueda A* combina el costo acumulado con la estimación heurística:
+\[
+f(n) = g(n) + h(n)
+\]
+
+Esto le permite balancear el costo ya pagado y el costo estimado faltante. Dado que la heurística utilizada es admisible, A* mantiene la garantía estándar de encontrar una solución óptima respecto al costo.
+
+\subsection{Admisibilidad de la heurística}
+La heurística propuesta es admisible porque nunca sobreestima el costo real restante hasta la meta. La justificación depende del caso.
+
+\subsubsection{Caso 1: aún faltan pasajeros}
+Si todavía falta al menos un pasajero por recoger, cualquier solución válida debe llegar primero a \textbf{algún} pasajero faltante antes de poder terminar en el destino. La heurística toma la distancia Manhattan al pasajero faltante más cercano.
+
+La distancia Manhattan subestima o iguala el número de movimientos necesarios en una cuadrícula con movimientos ortogonales, porque:
+
+\begin{itemize}
+    \item ignora obstáculos;
+    \item ignora rodeos;
+    \item supone implícitamente que cada movimiento cuesta al menos \(1\).
+\end{itemize}
+
+Además, en este proyecto el costo real de un movimiento nunca es menor que \(1\), y algunas casillas cuestan \(7\). Por lo tanto:
+\[
+h(n) \leq \text{costo real para alcanzar al menos un pasajero faltante} \leq \text{costo real restante hasta la meta}
+\]
+
+\subsubsection{Caso 2: todos los pasajeros ya fueron recogidos}
+En este caso la tarea restante se reduce a ir desde la posición actual hasta el destino. De nuevo, la distancia Manhattan al destino nunca sobreestima el costo real, porque cada desplazamiento vale al menos \(1\) y la presencia de muros o tráfico alto solo puede aumentar el costo real.
+
+\[
+h(n) = h_M(n, destino) \leq h^*(n)
+\]
+donde \(h^*(n)\) representa el costo óptimo real desde \(n\) hasta la meta.
+
+\subsubsection{Conclusión}
+En ambos casos:
+\[
+h(n) \leq h^*(n)
+\]
+por lo que la heurística es admisible y satisface lo solicitado por el enunciado del proyecto.
+
+\subsection{Cómo se evitan los ciclos en avara y A*}
+\subsubsection{Avara}
+En búsqueda avara se usa un conjunto \texttt{visitados} sobre el estado compuesto \((posicion, pasajeros\_recogidos)\):
+
+\begin{lstlisting}[style=pythonstyle,caption={Control de ciclos en Avara}]
+estado = (nodo.posicion, nodo.pasajeros_recogidos)
+
+if estado in visitados:
+    continue
+visitados.add(estado)
+\end{lstlisting}
+
+Esto evita reexpandir el mismo estado indefinidamente. Sin embargo, si el vehículo regresa a una posición después de haber recogido un pasajero, el conjunto \texttt{pasajeros\_recogidos} cambia y el estado es distinto. En consecuencia, el retorno sí se permite.
+
+\subsubsection{A*}
+En A* el control es más fino: no solo se evita repetir estados, sino que además se conserva el mejor costo conocido para cada estado.
+
+\begin{lstlisting}[style=pythonstyle,caption={Control de repetición de estados en A*}]
+if estado in best_g and best_g[estado] <= nodo.g:
+    continue
+best_g[estado] = nodo.g
+\end{lstlisting}
+
+Así, un estado solo se descarta si ya fue alcanzado antes con un costo menor o igual. Si se encuentra el mismo estado con mejor costo, se conserva la nueva alternativa. Este mecanismo evita ciclos costosos y mantiene la lógica correcta de A*.
+
+\subsection{Precisiones sobre los algoritmos no completos}
+Dentro de la práctica del proyecto, los casos más delicados frente a ciclos son \texttt{dfs} y \texttt{avara}. En ambos algoritmos la estrategia de expansión puede quedarse atrapada explorando repeticiones si no existe control explícito de estados. Por eso, en esta implementación:
+
+\begin{itemize}
+    \item \texttt{dfs} evita ciclos mediante el conjunto \texttt{visitados} basado en \((posicion, pasajeros\_recogidos)\);
+    \item \texttt{avara} usa exactamente el mismo criterio de estado para no reexpandir estados ya explorados;
+    \item en ambos casos, el retorno a una casilla previamente recorrida sí se permite cuando el conjunto de pasajeros recogidos ya cambió.
+\end{itemize}
+
+Esta última propiedad es la que hace compatible la prevención de ciclos con el requisito del enunciado.
+
+\section{Interfaz y ejecución}
+La aplicación carga un archivo de texto, dibuja el mapa, permite escoger la familia de búsqueda y luego el algoritmo concreto desde la interfaz gráfica. Posteriormente anima el recorrido y muestra un reporte con:
+
+\begin{itemize}
+    \item nodos expandidos;
+    \item profundidad;
+    \item tiempo de cómputo;
+    \item costo, cuando aplica;
+    \item heurística final, en el caso de la búsqueda informada.
+\end{itemize}
+
+La versión actual del proyecto fue reorganizada para dejar una interfaz persistente: el usuario puede mantener el mismo mapa en pantalla, probar diferentes algoritmos y cambiar de mapa desde la misma sesión sin cerrar el programa.
+
+\section{Conclusiones}
+El proyecto permite contrastar claramente el comportamiento de búsquedas no informadas e informadas sobre un mismo ambiente con costos variables. La principal ventaja de la modelación adoptada es que el estado incluye tanto la posición como los pasajeros ya recogidos, lo que resuelve correctamente el requisito de evitar ciclos sin impedir retornos necesarios después de recoger pasajeros.
+
+La heurística basada en distancia Manhattan al pasajero faltante más cercano, o al destino cuando ya no faltan pasajeros, es simple, eficiente y admisible bajo las reglas del problema. Esto hace que A* sea una alternativa sólida para encontrar soluciones de bajo costo dentro de la ciudad modelada.
+
+\vspace{0.5cm}
+\noindent\textbf{Nota de edición:} antes de entregar, reemplace los campos de estudiantes y profesor en la portada por los nombres reales del grupo.
+
+\end{document}

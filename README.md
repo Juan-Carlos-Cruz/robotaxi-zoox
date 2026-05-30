@@ -1,31 +1,137 @@
 # robotaxi-zoox
-Proyecto del curso "Inteligencia artificial" el cual consta de lo siguiente: El objetivo de este proyecto es utilizar algoritmos de búsqueda para ayudar al vehículo inteligente a ubicar a todos los pasajeros y luego encontrar un camino hasta el destino. Para efectos de la simulación, se supondrá que todos los pasajeros se dirigen a un mismo punto. 
+
+Proyecto del curso de Inteligencia Artificial. El problema consiste en mover un robotaxi dentro de una ciudad en cuadricula para recoger todos los pasajeros y luego llegar al destino final usando algoritmos de busqueda no informada e informada.
+
+## Estado actual
+
+La aplicacion ya no funciona como una secuencia de ventanas separadas. Hoy el proyecto ofrece una interfaz persistente:
+
+- selector de mapa al iniciar;
+- mapa grande a la izquierda;
+- panel de algoritmos a la derecha;
+- cambio de mapa sin cerrar la aplicacion;
+- modal de resultados al finalizar cada recorrido;
+- reporte con tiempo de busqueda separado del tiempo de animacion;
+- musica y efectos de sonido integrados.
+
+## Algoritmos incluidos
+
+Busqueda no informada:
+
+- Amplitud (`BFS`)
+- Costo uniforme (`UCS`)
+- Profundidad evitando ciclos (`DFS`)
+
+Busqueda informada:
+
+- Avara
+- A*
+
+### Modelado del estado
+
+El estado de busqueda incluye:
+
+- posicion del taxi;
+- conjunto de pasajeros recogidos;
+- costo acumulado;
+- profundidad;
+- heuristica y `f` en los algoritmos informados.
+
+Esto permite evitar ciclos sin impedir que el taxi se devuelva despues de recoger un pasajero, porque el estado cambia cuando cambia el conjunto de pasajeros recogidos.
+
+### Heuristica usada
+
+La heuristica de los algoritmos informados se basa en distancia Manhattan:
+
+- si faltan pasajeros, usa la distancia al pasajero faltante mas cercano;
+- si ya estan todos recogidos, usa la distancia al destino.
+
+La explicacion completa y la justificacion de admisibilidad estan en [`docs/informe.tex`](docs/informe.tex) y [`docs/informe.pdf`](docs/informe.pdf).
+
+## Interfaz
+
+Flujo actual de uso:
+
+1. Ejecuta la aplicacion.
+2. Selecciona un mapa `.txt`.
+3. Elige `No informada` o `Informada`.
+4. Selecciona el algoritmo especifico.
+5. Observa la animacion del recorrido.
+6. Revisa el modal final y prueba otro algoritmo o cambia de mapa.
+
+Controles visibles en la interfaz:
+
+- `Cambiar mapa`
+- `Ambiente On / Off` para activar o desactivar solo la musica ambiente
+- botones de categoria y subopciones de algoritmos
+- cierre de modal sin cerrar el programa
+
+## Reporte de resultados
+
+El modal final muestra:
+
+- nodos expandidos;
+- profundidad;
+- pasos del camino;
+- costo total;
+- tiempo de busqueda en milisegundos;
+- heuristica final, solo cuando el algoritmo es informado.
+
+Importante: el tiempo mostrado corresponde a la ejecucion del algoritmo de busqueda. La animacion del taxi se mide aparte y no se mezcla con ese valor.
+
+## Audio
+
+La aplicacion incluye:
+
+- musica ambiente de inicio;
+- sonido del auto en carretera durante la animacion;
+- claxon al recoger pasajero;
+- claxon al pasar por trafico alto;
+- sonido de clic en botones;
+- jingle de finalizacion al abrir el modal de resultado.
+
+Los assets viven en [`audio/`](audio) y pueden regenerarse con:
+
+```bash
+python3 scripts/generate_audio_assets.py
+```
+
+Si `pygame.mixer` no puede inicializarse en la maquina, la aplicacion sigue funcionando sin audio.
+
+## Render del mapa
+
+El visualizador usa una estetica tipo ciudad:
+
+- carretera para vias libres;
+- edificios para muros;
+- semaforo para trafico alto;
+- taxi y pasajero con sprites propios;
+- marcadores claros de `Inicio` y `Meta`;
+- orientacion de calles segun conectividad del mapa.
 
 ## Ejecucion automatica
 
-El proyecto incluye automatizacion para preparar el entorno, validar dependencias y ejecutar la aplicacion con validaciones previas. La meta no es “prometer cero errores” en cualquier maquina del mundo, sino detectar antes los problemas previsibles y decir exactamente que falta.
-
 ### Una sola instruccion
 
-- Unix, Linux, macOS o Git Bash:
+En Unix, Linux, macOS o Git Bash:
 
 ```bash
 make run
 ```
 
-- Alternativa sin `make`:
+Alternativas:
 
 ```bash
 bash scripts/run.sh
 ```
 
-- Windows sin Bash:
+En Windows:
 
-```bash
+```bat
 launchers\windows\run.bat
 ```
 
-- macOS con Finder o Terminal:
+En macOS:
 
 ```bash
 ./launchers/macos/run.command
@@ -41,81 +147,89 @@ make test
 make clean
 ```
 
-En Windows tambien existen:
-
-```bat
-launchers\windows\doctor.bat
-launchers\windows\setup.bat
-launchers\windows\run.bat
-launchers\windows\test.bat
-```
-
-En macOS tambien existen:
-
-```bash
-./launchers/macos/doctor.command
-./launchers/macos/setup.command
-./launchers/macos/run.command
-./launchers/macos/test.command
-```
+Tambien existen launchers equivalentes para Windows y macOS dentro de [`launchers/`](launchers).
 
 ## Que hace la automatizacion
 
-- detecta una version utilizable de Python
-- crea un entorno virtual separado por version
-- instala `pygame`
-- valida que `tkinter` y `pygame` esten disponibles
-- valida si hay entorno grafico antes de ejecutar la interfaz
-- en Linux intenta instalar dependencias del sistema si `pip` falla con `pygame`
+- detecta una version utilizable de Python;
+- crea un entorno virtual por version;
+- instala `pygame` si hace falta;
+- valida `tkinter` y `pygame`;
+- verifica si hay entorno grafico disponible;
+- en Linux intenta resolver dependencias del sistema cuando `pip` no basta.
 
-## Alcance real de la automatizacion
+## Requisitos practicos
 
-Lo que si cubre bien:
+Para ejecutar la interfaz necesitas:
 
-- maquinas con Python instalado
-- Windows con `py` o `python`
-- Linux con `dnf`, `apt-get` o `pacman`
-- macOS con `python3` y, si hace falta, Homebrew para completar `tkinter`
-- equipos con entorno grafico disponible
+- Python 3;
+- entorno grafico disponible;
+- `tkinter`;
+- `pygame`.
 
-Lo que no se puede garantizar al 100% solo desde el codigo fuente:
+Si solo quieres validar la logica de busqueda, puedes usar:
 
-- maquinas sin permisos de administrador cuando falta `tkinter` o `pygame`
-- equipos sin internet y sin paquetes del sistema disponibles
-- servidores o sesiones SSH sin entorno grafico
-- instalaciones de Python dañadas o no registradas correctamente
-
-Si en algun momento quieres una experiencia realmente cerrada y de menor riesgo para terceros, el siguiente paso no es mas Bash sino empaquetar binarios por sistema operativo.
+```bash
+make test
+```
 
 ## Estructura relevante
 
 ```text
 robotaxi-zoox/
+  README.md
   Makefile
-  scripts/
-    bootstrap.py
-    doctor.sh
-    setup.sh
-    run.sh
-    test.sh
-  launchers/
-    README.md
-    windows/
-      doctor.bat
-      setup.bat
-      run.bat
-      test.bat
-    macos/
-      doctor.command
-      setup.command
-      run.command
-      test.command
   application/
+    audio.py
+    carga.py
+    config.py
+    ejecucion.py
+    runner.py
+  algoritmosBusqueda/
+    informada/
+    noinformada/
+  audio/
+    finish_jingle.wav
+    lofi_ambient.wav
+    pickup_horn.wav
+    road_loop.wav
+    traffic_horn.wav
+    ui_click.wav
+  docs/
+    informe.tex
+    informe.pdf
+  imagenes/
+  launchers/
+    macos/
+    windows/
+  mapas/
+    test/
   mundo/
     io/
     models/
-  algoritmosBusqueda/
+  scripts/
+    bootstrap.py
+    doctor.sh
+    generate_audio_assets.py
+    run.sh
+    setup.sh
+    test.sh
   tests/
-  mapas/
-    test/
+  ui/
+    visualizador.py
 ```
+
+## Documentacion del proyecto
+
+- Informe fuente: [`docs/informe.tex`](docs/informe.tex)
+- Informe compilado: [`docs/informe.pdf`](docs/informe.pdf)
+
+## Verificacion
+
+Comando recomendado para validar el proyecto:
+
+```bash
+make test
+```
+
+Eso compila los modulos relevantes y ejecuta las pruebas incluidas de `Grid`, algoritmos no informados e informados.

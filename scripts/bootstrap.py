@@ -453,6 +453,9 @@ def main() -> int:
             return command_test(args.python_command)
         if args.command == "clean":
             return command_clean()
+    except KeyboardInterrupt:
+        log("Interrumpido por el usuario.")
+        return 130
     except BootstrapError as error:
         log(f"ERROR: {error}")
         return 1

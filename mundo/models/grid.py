@@ -49,7 +49,7 @@ class Grid:
     def get_vecinos(self, nodo):
         vecinos = []
         fila, col = nodo.posicion
-        movimientos = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        movimientos = [(0, 1), (-1, 0), (1, 0), (0, -1)]
 
         for delta_fila, delta_columna in movimientos:
             nueva_fila = fila + delta_fila

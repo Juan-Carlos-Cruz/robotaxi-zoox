@@ -1,0 +1,27 @@
+\babel@toc {spanish}{}\relax 
+\contentsline {section}{\numberline {1}Descripción del problema}{2}{section.1}%
+\contentsline {section}{\numberline {2}Resumen del proyecto}{2}{section.2}%
+\contentsline {section}{\numberline {3}Modelado del problema}{2}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Representación del estado}{2}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Operadores}{3}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Función de costo}{3}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Condición de meta}{3}{subsection.3.4}%
+\contentsline {section}{\numberline {4}Algoritmos de búsqueda no informada}{4}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Búsqueda en amplitud}{4}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Costo uniforme}{4}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Profundidad evitando ciclos}{4}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Cómo se evitan los ciclos en no informada}{4}{subsection.4.4}%
+\contentsline {section}{\numberline {5}Algoritmos de búsqueda informada}{5}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Heurística utilizada}{5}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Búsqueda avara}{5}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Búsqueda A*}{6}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Admisibilidad de la heurística}{6}{subsection.5.4}%
+\contentsline {subsubsection}{\numberline {5.4.1}Caso 1: aún faltan pasajeros}{6}{subsubsection.5.4.1}%
+\contentsline {subsubsection}{\numberline {5.4.2}Caso 2: todos los pasajeros ya fueron recogidos}{6}{subsubsection.5.4.2}%
+\contentsline {subsubsection}{\numberline {5.4.3}Conclusión}{7}{subsubsection.5.4.3}%
+\contentsline {subsection}{\numberline {5.5}Cómo se evitan los ciclos en avara y A*}{7}{subsection.5.5}%
+\contentsline {subsubsection}{\numberline {5.5.1}Avara}{7}{subsubsection.5.5.1}%
+\contentsline {subsubsection}{\numberline {5.5.2}A*}{7}{subsubsection.5.5.2}%
+\contentsline {subsection}{\numberline {5.6}Precisiones sobre los algoritmos no completos}{7}{subsection.5.6}%
+\contentsline {section}{\numberline {6}Interfaz y ejecución}{8}{section.6}%
+\contentsline {section}{\numberline {7}Conclusiones}{8}{section.7}%

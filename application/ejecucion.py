@@ -18,8 +18,13 @@ def ejecutar_algoritmo(nombre, grid):
 
 
 def imprimir_resultado(resultado):
+    tiempo_busqueda_ms = resultado.get("tiempo_busqueda_ms", resultado.get("tiempo"))
     print(f"✅ Solución encontrada. Costo: {resultado['costo']}")
     print(f"Pasos: {len(resultado['camino'])}")
     print(f"camino: {resultado['camino']}")
     print(f"nodos expandidos: {resultado['nodos_expandidos']}")
     print(f"profundidad: {resultado['profundidad']}")
+    if tiempo_busqueda_ms is not None:
+        print(f"tiempo de búsqueda: {tiempo_busqueda_ms} ms")
+    if "heuristica" in resultado:
+        print(f"heuristica: {resultado['heuristica']}")
