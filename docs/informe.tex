@@ -5,15 +5,23 @@
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
 \usepackage{geometry}
+\usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{parskip}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{array}
 \usepackage{enumitem}
+\usepackage{float}
+\usepackage{needspace}
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{fancyhdr}
+\usepackage{tikz}
+\usepackage{tabularx}
+
+\usetikzlibrary{arrows.meta,calc,positioning}
 
 \geometry{margin=2.5cm}
 \setlength{\headheight}{15pt}
@@ -53,11 +61,159 @@
 \newcommand{\facultad}{Facultad de Ingeniería}
 \newcommand{\escuela}{Escuela de Ingeniería de Sistemas y Computación}
 \newcommand{\materia}{Inteligencia Artificial}
-\newcommand{\profesor}{Nombre del profesor}
+\newcommand{\profesor}{Oscar Fernando Bedoya Leiva}
 \newcommand{\estudiantes}{
-    Nombre del estudiante 1\\
-    Nombre del estudiante 2\\
-    Nombre del estudiante 3
+    Alexander Garzon Mariaca (2510017)\\
+    Juan Carlos Cruz Muñoz (1824389)\\
+    Estiven Andres Martinez Granados (2179687)
+}
+
+\definecolor{wallcolor}{RGB}{150,150,150}
+\definecolor{trafficcolor}{RGB}{255,20,12}
+\definecolor{startcolor}{RGB}{255,220,100}  
+\definecolor{destinationcolor}{RGB}{248,203,173}
+\definecolor{expandcolor}{RGB}{255,244,179}
+\definecolor{goalcolor}{RGB}{216,245,214}
+\definecolor{discardcolor}{RGB}{238,238,238}
+\definecolor{treegreen}{RGB}{152,214,74}
+\definecolor{treeblue}{RGB}{62,70,210}
+
+\tikzset{
+    treecircle/.style={
+        circle,
+        draw=black,
+        line width=0.55pt,
+        fill=treegreen,
+        minimum size=8.5mm,
+        inner sep=0pt,
+        font=\footnotesize\bfseries
+    },
+    goalcircle/.style={treecircle, fill=green!55},
+    pendingcircle/.style={
+        circle,
+        draw=black,
+        line width=0.55pt,
+        fill=white,
+        minimum size=8.5mm,
+        inner sep=0pt,
+        font=\footnotesize\bfseries
+    },
+    discardcircle/.style={
+        circle,
+        draw=black,
+        dashed,
+        line width=0.55pt,
+        fill=discardcolor,
+        minimum size=8.5mm,
+        inner sep=0pt,
+        font=\footnotesize\bfseries
+    },
+    treelabel/.style={align=center, font=\scriptsize, inner sep=1pt},
+    treesidelabel/.style={font=\scriptsize, inner sep=1pt},
+    movearrow/.style={-{Latex[length=2.4mm,width=1.6mm]}, line width=0.8pt},
+    treeedge/.style={draw, line width=0.55pt}
+}
+
+\newcommand{\searchcirclenodebelow}[6]{%
+    \node[#5] (#1) at #2 {#3};
+    \node[treelabel, text width=#6, below=1.8mm of #1] {#4};
+}
+
+\newcommand{\searchcirclenodecompact}[5]{%
+    \node[#5] (#1) at #2 {#3};
+    \node[treelabel, below=1.8mm of #1] {#4};
+}
+
+\newcommand{\treeopdraw}[5]{%
+    \draw[movearrow] ($ (#1)!#3!(#2) + #4 $) -- ($ (#1)!#3!(#2) + #5 $);
+}
+
+\newcommand{\searchcirclenoderight}[6]{%
+    \node[#5] (#1) at #2 {#3};
+    \node[treesidelabel, align=left, anchor=west, text width=#6] at ($(#1)+(1.05,0)$) {#4};
+}
+
+\newcommand{\searchcirclenodeleft}[6]{%
+    \node[#5] (#1) at #2 {#3};
+    \node[treesidelabel, align=right, anchor=east, text width=#6] at ($(#1)+(-1.05,0)$) {#4};
+}
+
+\newcommand{\problemmapfigure}{
+    \begin{tikzpicture}[x=0.62cm,y=0.62cm,line cap=round,line join=round,>=Latex]
+        \foreach \x/\y in {
+            1/9, 2/9, 3/9, 4/9, 5/9, 6/9, 7/9, 8/9, 9/9,
+            1/8, 2/8,
+            1/7, 2/7, 4/7, 6/7, 8/7,
+            1/5, 2/5, 4/5, 5/5, 6/5, 7/5, 8/5,
+            4/4, 5/4,
+            1/3, 2/3, 3/3, 4/3, 5/3, 7/3, 8/3, 9/3,
+            1/2, 5/2, 9/2,
+            1/1, 3/1, 5/1, 6/1, 7/1, 9/1,
+            3/0, 9/0
+        } {
+            \fill[wallcolor] (\x,\y) rectangle ++(1,1);
+        }
+
+        \foreach \x/\y in {6/8, 4/6, 8/6} {
+            \fill[trafficcolor] (\x,\y) rectangle ++(1,1);
+        }
+
+        \fill[startcolor] (0,7) rectangle ++(1,1);
+        \fill[destinationcolor] (9,4) rectangle ++(1,1);
+
+        \draw[line width=1pt] (0,0) rectangle (10,10);
+        \foreach \i in {1,...,9} {
+            \draw[line width=0.55pt] (\i,0) -- (\i,10);
+            \draw[line width=0.55pt] (0,\i) -- (10,\i);
+        }
+
+        \node[font=\bfseries\footnotesize] at (0.5,7.5) {I};
+        \node[font=\bfseries\footnotesize] at (9.5,4.5) {D};
+        \node[draw, circle, fill=white, inner sep=1.3pt, font=\bfseries\tiny] at (0.5,9.5) {P};
+        \node[draw, circle, fill=white, inner sep=1.3pt, font=\bfseries\tiny] at (0.5,3.5) {P};
+
+        \node[align=center, anchor=east] at (-1.9,7.5) {Punto de\\partida del\\vehículo};
+        \draw[-{Latex[length=2.5mm]}, line width=0.5pt] (-1.55,7.5) -- (0.05,7.5);
+
+        \node[anchor=east] at (-1.35,3.5) {Pasajero};
+        \draw[-{Latex[length=2.5mm]}, line width=0.5pt] (-1.1,3.5) -- (0.05,3.5);
+
+        \draw[-{Latex[length=2.5mm]}, line width=0.5pt] (10.65,7.6) -- (8.95,7.6);
+        \node[anchor=west] at (10.9,7.6) {Muro};
+
+        \draw[-{Latex[length=2.5mm]}, line width=0.5pt] (10.65,6.5) -- (8.95,6.5);
+        \node[align=left, anchor=west] at (10.9,6.5) {Flujo vehicular\\alto};
+
+        \draw[-{Latex[length=2.5mm]}, line width=0.5pt] (10.65,4.5) -- (9.1,4.5);
+        \node[anchor=west] at (10.9,4.5) {Destino};
+
+        \draw[-{Latex[length=2.5mm]}, line width=0.5pt] (10.65,0.5) -- (8.2,0.5);
+        \node[align=left, anchor=west] at (10.9,0.5) {Vía libre\\(flujo vehicular bajo)};
+    \end{tikzpicture}
+}
+
+\newcommand{\tracecasemap}{
+    \begin{tikzpicture}[x=0.92cm,y=0.92cm]
+        \fill[startcolor] (0,2) rectangle ++(1,1);
+        \fill[trafficcolor] (1,2) rectangle ++(1,1);
+        \fill[destinationcolor] (3,2) rectangle ++(1,1);
+        \fill[wallcolor] (1,1) rectangle ++(1,1);
+        \fill[goalcolor] (0,0) rectangle ++(1,1);
+
+        \draw[line width=0.9pt] (0,0) rectangle (4,3);
+        \foreach \x in {1,2,3} {
+            \draw[line width=0.45pt] (\x,0) -- (\x,3);
+        }
+        \foreach \y in {1,2} {
+            \draw[line width=0.45pt] (0,\y) -- (4,\y);
+        }
+
+        \node[font=\bfseries\scriptsize] at (0.5,2.5) {I};
+        \node[font=\bfseries\scriptsize, text=white] at (1.5,2.5) {T};
+        \node[font=\bfseries\scriptsize] at (3.5,2.5) {D};
+        \node[font=\bfseries\scriptsize] at (0.5,0.5) {P};
+        \node[font=\bfseries\scriptsize] at (1.5,1.5) {M};
+    \end{tikzpicture}
 }
 
 \begin{document}
@@ -78,7 +234,7 @@
     {\LARGE \textbf{Robotaxi Zoox} \par}
     \vspace{2cm}
 
-    \begin{flushleft}
+    \begin{center}
         \textbf{Estudiantes:}\par
         \estudiantes
 
@@ -89,7 +245,7 @@
         \vspace{0.8cm}
         \textbf{Semestre:}\par
         2026-I
-    \end{flushleft}
+    \end{center}
 
     \vfill
     {\large \today \par}
@@ -101,7 +257,18 @@
 \newpage
 
 \section{Descripción del problema}
-El proyecto plantea una versión avanzada del \textit{Robotaxi Zoox}, capaz de recoger múltiples pasajeros dentro de una ciudad modelada como una cuadrícula de \(10 \times 10\), para finalmente llevarlos a un único destino. Cada casilla del ambiente representa un tipo de elemento del mundo: vía libre, muro, punto de inicio, flujo vehicular alto, pasajero o destino.
+El proyecto se desarrolla en una ciudad representada como una cuadrícula de \(10 \times 10\). En ella, un robotaxi Zoox parte desde una posición inicial y debe recoger a todos los pasajeros distribuidos en el mapa antes de dirigirse al único punto de destino. El entorno incluye casillas libres, muros que bloquean el paso y zonas de flujo vehicular alto que pueden recorrerse, pero con un costo mayor.
+
+Por tanto, el objetivo no es simplemente llegar al destino, sino recoger primero a todos los pasajeros y finalizar luego en la posición indicada. Bajo el supuesto de que todos los pasajeros se dirigen al mismo punto de llegada, la \textbf{Figura~\ref{fig:mapa-problema}} resume el escenario base del proyecto y permite identificar con claridad los elementos principales del mapa.
+
+\hspace{1cm}
+
+\begin{figure}[!ht]
+    \centering
+    \problemmapfigure
+    \caption{Mapa base del problema Robotaxi Zoox.}
+    \label{fig:mapa-problema}
+\end{figure}
 
 El vehículo solo puede desplazarse en las cuatro direcciones cardinales: arriba, abajo, izquierda y derecha. El costo del desplazamiento depende del tipo de casilla a la que se llega:
 
@@ -110,103 +277,380 @@ El vehículo solo puede desplazarse en las cuatro direcciones cardinales: arriba
     \item Flujo vehicular alto tiene costo \(7\).
 \end{itemize}
 
-Adicionalmente, si el robot entra a una casilla con pasajero, este se recoge automáticamente. El objetivo de búsqueda consiste en encontrar una secuencia de movimientos que recoja a todos los pasajeros y termine en el destino, respetando las restricciones del mapa y minimizando el criterio correspondiente según el algoritmo aplicado.
+Estos costos no cambian por llevar pasajeros; dependen solo del tipo de casilla a la que se entra. Además, la cantidad de pasajeros puede variar entre ambientes de prueba, aunque siempre existe al menos uno.
 
-\section{Resumen del proyecto}
-En este proyecto se desarrolló una aplicación interactiva que:
-
+En la representación del mapa se usan los siguientes valores:
 \begin{itemize}
-    \item carga un mundo desde un archivo de texto;
-    \item representa gráficamente el mapa de la ciudad;
-    \item permite elegir algoritmos de búsqueda no informada e informada;
-    \item anima visualmente el recorrido encontrado;
-    \item muestra un reporte con profundidad, nodos expandidos, tiempo de cómputo, costo y, para la búsqueda informada, el valor heurístico del nodo solución.
+    \item \(0\): casilla libre (flujo vehicular bajo);
+    \item \(1\): muro;
+    \item \(2\): punto de partida del vehículo;
+    \item \(3\): casilla con flujo vehicular alto;
+    \item \(4\): pasajero;
+    \item \(5\): destino.
 \end{itemize}
 
-La implementación actual organiza la lógica en módulos separados para el mundo, las búsquedas, la ejecución y la interfaz gráfica. Esta separación facilita la trazabilidad entre el modelo del problema, la estrategia de búsqueda y la visualización final.
+Si el robot entra en una casilla con pasajero, lo recoge automáticamente. Con esta representación del entorno, cada algoritmo busca una ruta válida siguiendo su propio criterio de exploración.
 
-\section{Modelado del problema}
-\subsection{Representación del estado}
-Cada nodo del espacio de búsqueda se modela por medio de:
+\section{Formulación del problema como búsqueda}
+En los problemas de búsqueda, lo habitual es describir el problema mediante \textbf{estados}, \textbf{operadores}, \textbf{meta} y \textbf{función costo de ruta}. Bajo ese esquema, el caso del robotaxi puede expresarse como un problema formal de búsqueda sobre un árbol o grafo de estados.
 
+\subsection{Estados}
+El estado del problema queda definido por dos componentes: la celda actual del taxi y el conjunto de pasajeros que ya han sido recogidos.
+
+Dicho de forma directa, el estado puede leerse como:
 \begin{itemize}
-    \item la posición actual del vehículo, representada como una tupla \((fila, columna)\);
-    \item el conjunto de pasajeros recogidos hasta el momento;
-    \item el costo acumulado \(g\);
-    \item la heurística \(h\), cuando el algoritmo la requiere;
-    \item un puntero al padre, para reconstruir el camino solución;
-    \item la profundidad del nodo.
+    \item posición actual del vehículo;
+    \item conjunto de pasajeros ya recogidos.
 \end{itemize}
 
-La decisión de incluir el conjunto de pasajeros recogidos dentro del estado es esencial. Gracias a ello, dos nodos en la misma posición pueden considerarse distintos si difieren en los pasajeros ya recogidos. Esta decisión permite cumplir con el lineamiento del proyecto de \textbf{evitar ciclos}, pero al mismo tiempo \textbf{permitir devolverse} cuando el vehículo ya cambió su estado al recoger un pasajero.
+Así, el estado inicial ubica al taxi en la casilla de inicio sin pasajeros recogidos, y el estado meta corresponde al taxi en el destino con todos los pasajeros ya recogidos.
+
+Guardar solo la posición no basta, porque una misma casilla puede representar situaciones distintas según los pasajeros recogidos. Como el mapa y la cantidad de pasajeros son finitos, el espacio de estados también lo es.
 
 \subsection{Operadores}
-La expansión de nodos se realiza con cuatro movimientos posibles:
-\[
-(0,1),\ (-1,0),\ (1,0),\ (0,-1)
-\]
-que corresponden a derecha, arriba, abajo e izquierda, respectivamente. Solo se generan vecinos transitables; es decir, casillas válidas dentro del mapa y diferentes de muro.
+Los operadores corresponden a los cuatro movimientos ortogonales permitidos por el entorno: mover a la derecha, arriba, abajo o izquierda.
 
-\subsection{Función de costo}
-La función de costo distingue entre dos tipos de tránsito:
+Cada operador genera un nuevo estado solo si la casilla de llegada es válida y transitable. Si el movimiento lleva a un muro, no se puede aplicar. Si el taxi entra en una casilla con pasajero, el nuevo estado conserva la nueva posición y además agrega ese pasajero al conjunto de pasajeros recogidos.
 
+\subsection{Meta}
+La meta se cumple únicamente cuando el robotaxi llega al destino después de recoger a todos los pasajeros del mapa.
+
+\subsection{Función costo de ruta}
+Esta función suele llamarse \(g\), y aquí representa simplemente el costo acumulado de la ruta hasta el nodo actual.
+
+En este problema:
 \begin{itemize}
-    \item flujo bajo: costo \(1\);
-    \item flujo alto: costo \(7\).
+    \item entrar a una vía libre, a la casilla inicial, a una casilla con pasajero o al destino cuesta \(1\);
+    \item entrar a una casilla de flujo vehicular alto cuesta \(7\).
 \end{itemize}
 
-Por tanto, el costo acumulado de un nodo es la suma de los costos de las casillas a las que el vehículo ha ido entrando desde el estado inicial.
+Entonces este no es un problema de costo uniforme. Ese detalle explica por qué \texttt{bfs} no garantiza la mejor solución en costo, mientras que \texttt{ucs} y \texttt{A*} sí pueden hacerlo si se cumplen las condiciones teóricas correspondientes.
 
-\subsection{Condición de meta}
-Un nodo se considera meta si y solo si:
-\begin{enumerate}
-    \item la posición del vehículo coincide con el destino, y
-    \item el conjunto de pasajeros recogidos coincide con el conjunto total de pasajeros del mapa.
-\end{enumerate}
+\subsection{Árbol de búsqueda y espacio de estados}
+En un árbol de búsqueda, el \textbf{estado inicial es el nodo raíz} y el algoritmo, en cada paso, escoge un \textbf{nodo hoja} para expandirlo.
 
-\section{Algoritmos de búsqueda no informada}
-La implementación unifica amplitud, costo uniforme y profundidad evitando ciclos dentro de un mismo envoltorio en \texttt{algoritmosBusqueda/noinformada/wrapper.py}. La diferencia entre algoritmos está en la estructura de frontera y la forma de extraer el siguiente nodo.
+Conviene distinguir dos niveles:
+\begin{itemize}
+    \item el \textbf{estado del problema}, que solo necesita posición y pasajeros recogidos;
+    \item el \textbf{nodo del árbol de búsqueda}, que además guarda padre, profundidad, costo acumulado, valor heurístico y evaluación total.
+\end{itemize}
 
-\subsection{Búsqueda en amplitud}
-La búsqueda en amplitud (\texttt{bfs}) usa una cola FIFO. Esto hace que primero se exploren los nodos de menor profundidad. Por construcción, encuentra soluciones con el menor número de pasos cuando todos los costos son uniformes.
+Esta separación es importante porque varios nodos del árbol pueden representar el mismo estado abstracto, pero haber sido alcanzados por rutas distintas y con costos diferentes. Precisamente allí aparecen los conceptos de \texttt{visitados} y \texttt{best\_g}.
 
-\subsection{Costo uniforme}
-La búsqueda de costo uniforme (\texttt{ucs}) usa una cola de prioridad ordenada por el costo acumulado \(g\). De este modo, el siguiente nodo a expandir siempre es el de menor costo total conocido hasta el momento.
+\section{Correspondencia entre teoría e implementación}
+La organización del código sigue de forma bastante fiel la formulación anterior, aunque esa relación está repartida entre varios archivos. La Tabla~\ref{tab:teoria-implementacion} resume esa correspondencia.
 
-\subsection{Profundidad evitando ciclos}
-La búsqueda en profundidad (\texttt{dfs}) usa una pila LIFO. Como la estrategia profundiza rápidamente en una rama, se vuelve especialmente importante controlar los ciclos para evitar trayectorias infinitas o expansiones redundantes.
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.08}
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.9cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}p{4.8cm}|}
+        \hline
+        \textbf{Concepto teórico} & \textbf{Interpretación} & \textbf{Representación en código} \\
+        \hline
+        Estado & Posición actual del taxi y conjunto de pasajeros recogidos & \shortstack[l]{atributos \nolinkurl{posicion}\\ y \nolinkurl{pasajeros_recogidos}} \\
+        \hline
+        Nodo del árbol & Estado más información auxiliar para la búsqueda & \shortstack[l]{clase \nolinkurl{Node}: padre,\\ profundidad, costo,\\ heurística y evaluación} \\
+        \hline
+        Operadores & Mover el taxi en cuatro direcciones cardinales & método \nolinkurl{get_vecinos()} \\
+        \hline
+        Meta & Llegar al destino con todos los pasajeros recogidos & \shortstack[l]{condición en\\ \nolinkurl{wrapper.py}} \\
+        \hline
+        Función costo de ruta & Suma de costos de las casillas recorridas & \shortstack[l]{atributo de costo\\ y método\\ \nolinkurl{costo_movimiento()}} \\
+        \hline
+        Frontera & Conjunto de hojas pendientes por expandir & \shortstack[l]{cola FIFO, pila LIFO\\ o cola de prioridad} \\
+        \hline
+        Control de repetición & Evitar expandir estados equivalentes sin perder retornos válidos & \shortstack[l]{\nolinkurl{visitados} o \nolinkurl{best_g}\\ usando posición y pasajeros} \\
+        \hline
+    \end{tabularx}
+    \caption{Correspondencia entre la formulación teórica y la implementación.}
+    \label{tab:teoria-implementacion}
+\end{table}
 
-\subsection{Cómo se evitan los ciclos en no informada}
-El control de ciclos se hace sobre el estado compuesto \((posicion, pasajeros\_recogidos)\). Esto significa que solo se descarta un nodo si vuelve exactamente a una posición con el mismo conjunto de pasajeros recogidos.
+Eso se ve en los siguientes fragmentos:
 
-\begin{lstlisting}[style=pythonstyle,caption={Control de ciclos en búsqueda no informada}]
+\Needspace{8\baselineskip}
+\begin{lstlisting}[style=pythonstyle,caption={Información guardada en Node}]
+self.posicion = posicion
+self.pasajeros_recogidos = pasajeros_recogidos
+self.padre = padre
+self.g = g
+self.profundidad = (padre.profundidad + 1) if padre else 0
+\end{lstlisting}
+
+\Needspace{8\baselineskip}
+\begin{lstlisting}[style=pythonstyle,caption={Meta y control de repetición en wrapper.py}]
 estado = (nodo.posicion, nodo.pasajeros_recogidos)
 
 if estado in visitados:
     continue
 
+if nodo.posicion == grid.destino and nodo.pasajeros_recogidos == pasajeros_totales:
+    return ...
+\end{lstlisting}
+
+\Needspace{10\baselineskip}
+\begin{lstlisting}[style=pythonstyle,caption={Generación de sucesores y actualización del estado}]
+costo = nodo.g + self.costo_movimiento(nueva_fila, nueva_columna)
+nuevos_pasajeros = set(nodo.pasajeros_recogidos)
+
+if self.matriz[nueva_fila][nueva_columna] == Grid.PASAJERO:
+    nuevos_pasajeros.add((nueva_fila, nueva_columna))
+\end{lstlisting}
+
+Ese último fragmento muestra que la transición no solo cambia la posición: también puede modificar el conjunto de pasajeros recogidos.
+
+\section{Algoritmos de búsqueda no informada}
+Una búsqueda no informada funciona a ciegas: no dispone de información adicional que indique qué tan cerca está un nodo de la meta. Solo usa la formulación del problema y, en el caso de costo uniforme, el costo acumulado de la ruta.
+
+Los algoritmos \texttt{bfs}, \texttt{dfs} y \texttt{ucs} comparten el mismo bucle general de expansión. Lo único que cambia es el criterio con el que se elige el siguiente nodo de la frontera:\begin{itemize}
+    \item \texttt{bfs}: usa una cola FIFO, de modo que el primer nodo en entrar es el primero en salir.
+    \item \texttt{dfs}: usa una pila LIFO, de modo que el último nodo en entrar es el primero en salir.
+    \item \texttt{ucs}: usa una cola de prioridad, de modo que primero sale el nodo con menor costo acumulado.
+\end{itemize}
+
+\begin{sloppypar}
+En el código, esa diferencia se implementa dentro de \path{algoritmosBusqueda/noinformada/wrapper.py} y el control de repetición se hace sobre el estado compuesto \( (\text{posicion},\;\text{pasajeros\_recogidos}) \).
+\end{sloppypar}
+
+\begin{sloppypar}
+Además, el orden de expansión entre hijos (y por tanto el desempate en BFS/DFS) está determinado por el orden de movimientos en \path{mundo/models/grid.py}:
+\end{sloppypar}
+
+\begin{lstlisting}[style=pythonstyle,caption={Orden de movimientos y generación de vecinos}]
+movimientos = [(0, 1), (-1, 0), (1, 0), (0, -1)]
+
+for delta_fila, delta_columna in movimientos:
+    ...
+    vecinos.append(Node(..., g=costo))
+\end{lstlisting}
+
+\subsection{Caso reducido para visualizar el árbol}
+Para comparar con claridad las búsquedas no informadas e informadas, se usa el caso reducido de la \textbf{Figura~\ref{fig:caso-reducido}}. Desde el estado inicial existen dos decisiones inmediatas: ir a la derecha por una casilla de tráfico alto o bajar por una casilla de costo bajo hacia el pasajero.
+
+\begin{figure}[!ht]
+    \centering
+    \tracecasemap
+    \caption{Caso reducido usado para ilustrar el comportamiento de las estrategias de búsqueda. I = inicio, P = pasajero, D = destino, T = flujo alto, M = muro.}
+    \label{fig:caso-reducido}
+\end{figure}
+
+\subsection{Búsqueda preferente por amplitud}
+La estrategia expande primero el nodo raíz, luego los nodos de profundidad \(1\), después los de profundidad \(2\), y así sucesivamente. En el código esto se implementa con una cola FIFO.
+
+\begin{lstlisting}[style=pythonstyle,caption={Implementación de BFS (frontera FIFO)}]
+frontera = deque([nodo_inicial])
+
+def pop():
+    return frontera.popleft()
+\end{lstlisting}
+
+El control de ciclos para \texttt{bfs} se hace con el estado compuesto, evitando reexpandir el mismo par \((\text{posicion},\text{pasajeros\_recogidos})\):
+
+\begin{lstlisting}[style=pythonstyle,caption={Control de ciclos en BFS}]
+estado = (nodo.posicion, nodo.pasajeros_recogidos)
+if estado in visitados:
+    continue
 visitados.add(estado)
 \end{lstlisting}
 
-Esta decisión es particularmente importante en \texttt{dfs}. Si el vehículo vuelve a una casilla ya visitada pero ahora con más pasajeros recogidos, el estado ya no es el mismo y por tanto la expansión sí se permite. Esto implementa directamente la regla del proyecto: \textbf{evitar ciclos, pero dejar que el vehículo se devuelva después de recoger un pasajero}.
+En el árbol reducido, el orden de expansión entre los dos hijos de la raíz coincide con el orden de \texttt{movimientos} mostrado antes; por eso, aunque ambos están al mismo nivel, se expande primero el que corresponde a ``derecha''.
 
-\section{Algoritmos de búsqueda informada}
-La búsqueda informada se implementa en \texttt{algoritmosBusqueda/informada/wrapper.py}. Allí se soportan dos variantes: búsqueda avara y búsqueda A*.
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{0.38\textwidth}
+        \centering
+        \begin{tikzpicture}[x=1cm,y=1cm]
+            \useasboundingbox (-1.65,-0.65) rectangle (1.65,2.75);
+            \node[treecircle] (bfs0) at (0,2.1) {1};
+            \node[treecircle] (bfs1) at (-1.05,0.95) {2};
+            \node[treecircle] (bfs2) at (1.05,0.95) {3};
+            \node[pendingcircle] (bfs3) at (-1.05,-0.2) {4};
+            \node[goalcircle] (bfs4) at (1.05,-0.2) {5};
 
-\subsection{Heurística utilizada}
-La heurística base es la distancia Manhattan:
-\[
-h_M((x_1, y_1), (x_2, y_2)) = |x_1 - x_2| + |y_1 - y_2|
-\]
+            \draw[treeedge] (bfs0) -- (bfs1);
+            \draw[treeedge] (bfs0) -- (bfs2);
+            \draw[treeedge] (bfs1) -- (bfs3);
+            \draw[treeedge] (bfs2) -- (bfs4);
+            \treeopdraw{bfs0}{bfs1}{0.52}{(-0.24,0.18)}{(0.02,0.18)}
+            \treeopdraw{bfs0}{bfs2}{0.52}{(0.18,0.28)}{(0.18,0.04)}
+            \treeopdraw{bfs1}{bfs3}{0.54}{(-0.22,0.00)}{(0.04,0.00)}
+            \treeopdraw{bfs2}{bfs4}{0.54}{(0.16,0.18)}{(0.16,-0.06)}
+        \end{tikzpicture}\\[0.05cm]
+        {\scriptsize
+        \begin{tabular}{@{}l@{}}
+        1: $(0,0),\emptyset$; $g=0$ \\
+        2: $(0,1),\emptyset$; $g=7$ \\
+        3: $(1,0),\emptyset$; $g=1$ \\
+        4: $(0,2),\emptyset$; $g=8$ \\
+        5: $(2,0),\{p\}$; $g=2$
+        \end{tabular}}
+    \end{minipage}
+    \caption{Árbol parcial de expansión de \texttt{bfs} en el caso reducido. El número de cada nodo indica el orden de expansión observado en la implementación y las flechas muestran el movimiento aplicado.}
+    \label{fig:bfs-reducido}
+\end{figure}
 
-Sobre esa base, el proyecto define la función heurística de esta forma:
+La \textbf{Figura~\ref{fig:bfs-reducido}} muestra que \texttt{bfs} primero expande el hijo derecho del nodo inicial porque ambos hijos están en la misma profundidad y el desempate lo resuelve el orden de operadores definido en \texttt{Grid.get\_vecinos()}. Esto coincide con la explicación teórica de que, dentro de un mismo nivel, el orden de aplicación de operadores sí importa.
 
+Teóricamente, \texttt{bfs} es completa si la ramificación es finita, pero solo garantiza optimalidad cuando todos los pasos cuestan lo mismo. Como hay casillas con costos distintos, \texttt{bfs} debe entenderse como una estrategia que busca rutas con menos movimientos, no necesariamente con menor costo total.
+
+\subsection{Búsqueda de costo uniforme}
+La búsqueda de costo uniforme expande el nodo con menor costo acumulado, sin importar su profundidad. En la implementación, esto se logra con una cola de prioridad basada en \texttt{heapq}.
+
+\begin{lstlisting}[style=pythonstyle,caption={Implementación de UCS (cola de prioridad por g)}]
+frontera = []
+heapq.heappush(frontera, (nodo_inicial.g, contador, nodo_inicial))
+
+def pop():
+    return heapq.heappop(frontera)[2]
+\end{lstlisting}
+
+En \texttt{ucs}, el control de ciclos es el mismo que en \texttt{bfs}/\texttt{dfs} porque el estado incluye los pasajeros recogidos:
+
+\begin{lstlisting}[style=pythonstyle,caption={Control de ciclos en UCS}]
+estado = (nodo.posicion, nodo.pasajeros_recogidos)
+if estado in visitados:
+    continue
+visitados.add(estado)
+\end{lstlisting}
+
+Por eso, en la \textbf{Figura~\ref{fig:ucs-reducido}} el estado con costo \(g=7\) queda pendiente: la prioridad se define por \(g\) y no por el orden de generación.
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{0.38\textwidth}
+        \centering
+        \begin{tikzpicture}[x=1cm,y=1cm]
+            \useasboundingbox (-1.65,-0.95) rectangle (1.65,4.15);
+            \node[treecircle] (ucs0) at (0,3.65) {1};
+            \node[pendingcircle] (ucs1) at (-1.05,2.5) {};
+            \node[treecircle] (ucs2) at (0,2.5) {2};
+            \node[treecircle] (ucs3) at (0,1.2) {3};
+            \node[treecircle] (ucs4) at (-0.95,-0.05) {4};
+            \node[treecircle] (ucs5) at (0.95,-0.05) {5};
+
+            \draw[treeedge] (ucs0) -- (ucs1);
+            \draw[treeedge] (ucs0) -- (ucs2);
+            \draw[treeedge] (ucs2) -- (ucs3);
+            \draw[treeedge] (ucs3) -- (ucs4);
+            \draw[treeedge] (ucs3) -- (ucs5);
+            \treeopdraw{ucs0}{ucs1}{0.50}{(-0.26,0.18)}{(0.00,0.18)}
+            \treeopdraw{ucs0}{ucs2}{0.52}{(0.18,0.28)}{(0.18,0.04)}
+            \treeopdraw{ucs2}{ucs3}{0.54}{(0.18,0.22)}{(0.18,-0.02)}
+            \treeopdraw{ucs3}{ucs4}{0.48}{(-0.34,0.18)}{(-0.08,0.18)}
+            \treeopdraw{ucs3}{ucs5}{0.48}{(0.24,-0.10)}{(0.24,0.16)}
+        \end{tikzpicture}\\[0.05cm]
+        {\scriptsize
+        \begin{tabular}{@{}l@{}}
+        1: $(0,0),\emptyset$; $g=0$ \\
+        pend.: $(0,1),\emptyset$; $g=7$ \\
+        2: $(1,0),\emptyset$; $g=1$ \\
+        3: $(2,0),\{p\}$; $g=2$ \\
+        4: $(2,1),\{p\}$; $g=3$ \\
+        5: $(1,0),\{p\}$; $g=3$
+        \end{tabular}}
+    \end{minipage}
+    \caption{Árbol parcial de expansión de \texttt{ucs} en el caso reducido. El número de cada nodo indica el orden de expansión observado en la implementación y las flechas muestran el movimiento aplicado.}
+    \label{fig:ucs-reducido}
+\end{figure}
+
+El árbol permite ver el efecto más importante: aunque el estado \((0,1)\) fue generado antes, no se expande de inmediato porque entrar allí cuesta \(7\). En cambio, se prioriza la rama inferior cuyo costo acumulado es menor. Esta conducta reproduce exactamente el criterio teórico de costo uniforme.
+
+Como todos los costos del problema son positivos, \texttt{ucs} mantiene su propiedad: si existe solución, la encuentra, y además la solución encontrada es óptima respecto al costo total de la ruta.
+\subsection{Búsqueda preferente por profundidad evitando ciclos}
+La búsqueda preferente por profundidad siempre intenta expandir el nodo más profundo disponible en la frontera. La pila LIFO hace que el último sucesor generado sea el primero en explorarse.
+
+\begin{lstlisting}[style=pythonstyle,caption={Implementación de DFS (frontera LIFO)}]
+frontera = [nodo_inicial]
+
+def pop():
+    return frontera.pop()
+\end{lstlisting}
+
+El control de ciclos en \texttt{dfs} también se apoya en el estado compuesto para evitar bucles:
+
+\begin{lstlisting}[style=pythonstyle,caption={Control de ciclos en DFS}]
+estado = (nodo.posicion, nodo.pasajeros_recogidos)
+if estado in visitados:
+    continue
+visitados.add(estado)
+\end{lstlisting}
+
+En el caso reducido, esto explica por qué la expansión sigue una sola rama antes de volver a los nodos pendientes: el \texttt{pop()} devuelve siempre el último vecino insertado.
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{0.30\textwidth}
+        \centering
+        \begin{tikzpicture}[x=1cm,y=1cm]
+            \useasboundingbox (-1.65,-1.65) rectangle (1.65,4.45);
+            \node[treecircle] (dfs0) at (0,4.0) {1};
+            \node[pendingcircle] (dfs1) at (-1.05,2.85) {};
+            \node[treecircle] (dfs2) at (0,2.85) {2};
+            \node[treecircle] (dfs3) at (0,1.5) {3};
+            \node[treecircle] (dfs4) at (0,0.15) {4};
+            \node[treecircle] (dfs5) at (0,-1.2) {5};
+
+            \draw[treeedge] (dfs0) -- (dfs1);
+            \draw[treeedge] (dfs0) -- (dfs2);
+            \draw[treeedge] (dfs2) -- (dfs3);
+            \draw[treeedge] (dfs3) -- (dfs4);
+            \draw[treeedge] (dfs4) -- (dfs5);
+            \treeopdraw{dfs0}{dfs1}{0.50}{(-0.26,0.18)}{(0.00,0.18)}
+            \treeopdraw{dfs0}{dfs2}{0.52}{(0.18,0.28)}{(0.18,0.04)}
+            \treeopdraw{dfs2}{dfs3}{0.54}{(0.18,0.22)}{(0.18,-0.02)}
+            \treeopdraw{dfs3}{dfs4}{0.54}{(0.18,-0.12)}{(0.18,0.12)}
+            \treeopdraw{dfs4}{dfs5}{0.54}{(0.18,-0.12)}{(0.18,0.12)}
+        \end{tikzpicture}\\[0.05cm]
+        {\scriptsize
+        \begin{tabular}{@{}l@{}}
+        1: $(0,0),\emptyset$; $g=0$ \\
+        pend.: $(0,1),\emptyset$; $g=7$ \\
+        2: $(1,0),\emptyset$; $g=1$ \\
+        3: $(2,0),\{p\}$; $g=2$ \\
+        4: $(1,0),\{p\}$; $g=3$ \\
+        5: $(0,0),\{p\}$; $g=4$
+        \end{tabular}}
+    \end{minipage}
+    \caption{Árbol parcial de expansión de \texttt{dfs} en el caso reducido. El número de cada nodo indica el orden de expansión observado en la implementación y las flechas muestran el movimiento aplicado.}
+    \label{fig:dfs-reducido}
+\end{figure}
+
+La \textbf{Figura~\ref{fig:dfs-reducido}} muestra cómo la búsqueda profundiza por una sola rama antes de volver a los estados pendientes.
+
+En este caso el detalle relevante es el control de ciclos sobre el estado compuesto \texttt{(posicion, pasajeros\_recogidos)}. Eso evita que la búsqueda quede atrapada devolviéndose indefinidamente, pero sigue permitiendo regresar a una casilla si el conjunto de pasajeros ya cambió. Desde la teoría, esta es la versión correcta de \textbf{evitar ciclos}, que es más fuerte que simplemente evitar el regreso inmediato.
+
+\section{Búsqueda informada y diseño de la heurística}
+La heurística se entiende como una estimación de lo que todavía falta para completar la solución. Esa idea se adapta aquí con un matiz importante: cuando aún faltan pasajeros, la meta global no puede alcanzarse directamente; antes es obligatorio llegar al menos a uno de los pasajeros pendientes.
+
+\subsection{Por qué esta heurística tiene sentido en este problema}
+La heurística base  es la distancia Manhattan. En palabras simples, mide cuántas filas y cuántas columnas separan dos celdas, y suma ambas cantidades.
+
+Su uso es natural por tres razones:
 \begin{itemize}
-    \item si el vehículo ya recogió a todos los pasajeros, la heurística es la distancia Manhattan desde la posición actual hasta el destino;
-    \item si todavía faltan pasajeros, la heurística es la distancia Manhattan al pasajero faltante más cercano.
+    \item el vehículo se mueve únicamente en direcciones ortogonales;
+    \item cada desplazamiento cuesta al menos \(1\);
+    \item los muros y el tráfico alto solo pueden aumentar el costo real, nunca reducirlo por debajo de la distancia Manhattan.
 \end{itemize}
 
-En términos operativos:
+Sin embargo, la heurística no debe mirar siempre al destino. Si todavía faltan pasajeros, una solución válida necesariamente debe pasar primero por alguno de ellos.
+
+La lógica es la siguiente:
+\begin{itemize}
+    \item mientras falten pasajeros, usamos la distancia Manhattan al pasajero pendiente más cercano;
+    \item cuando ya no faltan pasajeros, usamos la distancia Manhattan desde la posición actual hasta el destino.
+\end{itemize}
+
+Formalmente:
+\begin{itemize}
+    \item si faltan pasajeros, \(h(n)=\min\limits_{p\in P_{\text{falt}}}\left(|x-x_p|+|y-y_p|\right)\);
+    \item si no faltan pasajeros, \(h(n)=|x-x_d|+|y-y_d|\).
+\end{itemize}
+
+Eso hace que la heurística siga la estructura real del problema: primero recoger pasajeros, después cerrar la ruta en el destino.
+
+La implementación sigue exactamente esa idea:
 
 \begin{lstlisting}[style=pythonstyle,caption={Heurística implementada}]
 def calcular_heuristica(nodo, destino, pasajeros, meta_pasajeros):
@@ -218,111 +662,188 @@ def calcular_heuristica(nodo, destino, pasajeros, meta_pasajeros):
 \end{lstlisting}
 
 \subsection{Búsqueda avara}
-La búsqueda avara prioriza únicamente la heurística \(h\). Es decir, siempre expande primero el nodo que parece más cercano a una meta intermedia según la estimación heurística.
+La búsqueda avara selecciona el nodo con mejor valor heurístico. En términos prácticos, expande el nodo que \textbf{parece} más cercano a la meta sin tomar en cuenta el costo ya pagado.
 
-\[
-f(n) = h(n)
-\]
+\begin{lstlisting}[style=pythonstyle,caption={Implementación de búsqueda avara (prioridad por h)}]
+heapq.heappush(frontera, (nodo_inicial.h, contador, nodo_inicial))
 
-Esta estrategia puede ser rápida en algunos casos, pero no garantiza optimalidad porque ignora el costo acumulado \(g\).
+for vecino in grid.get_vecinos(nodo):
+    vecino.h = calcular_heuristica(vecino, destino, pasajeros, meta_pasajeros)
+    prioridad = vecino.h
+    heapq.heappush(frontera, (prioridad, contador, vecino))
+\end{lstlisting}
 
-\subsection{Búsqueda A*}
-La búsqueda A* combina el costo acumulado con la estimación heurística:
-\[
-f(n) = g(n) + h(n)
-\]
+Para evitar ciclos, la búsqueda avara marca el estado compuesto como visitado:
 
-Esto le permite balancear el costo ya pagado y el costo estimado faltante. Dado que la heurística utilizada es admisible, A* mantiene la garantía estándar de encontrar una solución óptima respecto al costo.
-
-\subsection{Admisibilidad de la heurística}
-La heurística propuesta es admisible porque nunca sobreestima el costo real restante hasta la meta. La justificación depende del caso.
-
-\subsubsection{Caso 1: aún faltan pasajeros}
-Si todavía falta al menos un pasajero por recoger, cualquier solución válida debe llegar primero a \textbf{algún} pasajero faltante antes de poder terminar en el destino. La heurística toma la distancia Manhattan al pasajero faltante más cercano.
-
-La distancia Manhattan subestima o iguala el número de movimientos necesarios en una cuadrícula con movimientos ortogonales, porque:
-
-\begin{itemize}
-    \item ignora obstáculos;
-    \item ignora rodeos;
-    \item supone implícitamente que cada movimiento cuesta al menos \(1\).
-\end{itemize}
-
-Además, en este proyecto el costo real de un movimiento nunca es menor que \(1\), y algunas casillas cuestan \(7\). Por lo tanto:
-\[
-h(n) \leq \text{costo real para alcanzar al menos un pasajero faltante} \leq \text{costo real restante hasta la meta}
-\]
-
-\subsubsection{Caso 2: todos los pasajeros ya fueron recogidos}
-En este caso la tarea restante se reduce a ir desde la posición actual hasta el destino. De nuevo, la distancia Manhattan al destino nunca sobreestima el costo real, porque cada desplazamiento vale al menos \(1\) y la presencia de muros o tráfico alto solo puede aumentar el costo real.
-
-\[
-h(n) = h_M(n, destino) \leq h^*(n)
-\]
-donde \(h^*(n)\) representa el costo óptimo real desde \(n\) hasta la meta.
-
-\subsubsection{Conclusión}
-En ambos casos:
-\[
-h(n) \leq h^*(n)
-\]
-por lo que la heurística es admisible y satisface lo solicitado por el enunciado del proyecto.
-
-\subsection{Cómo se evitan los ciclos en avara y A*}
-\subsubsection{Avara}
-En búsqueda avara se usa un conjunto \texttt{visitados} sobre el estado compuesto \((posicion, pasajeros\_recogidos)\):
-
-\begin{lstlisting}[style=pythonstyle,caption={Control de ciclos en Avara}]
+\begin{lstlisting}[style=pythonstyle,caption={Control de ciclos en búsqueda avara}]
 estado = (nodo.posicion, nodo.pasajeros_recogidos)
-
 if estado in visitados:
     continue
 visitados.add(estado)
 \end{lstlisting}
 
-Esto evita reexpandir el mismo estado indefinidamente. Sin embargo, si el vehículo regresa a una posición después de haber recogido un pasajero, el conjunto \texttt{pasajeros\_recogidos} cambia y el estado es distinto. En consecuencia, el retorno sí se permite.
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \begin{tikzpicture}[x=1cm,y=1cm]
+            \useasboundingbox (-2.85,-0.85) rectangle (2.85,3.75);
+            \node[treecircle] (greedy0) at (0,3.05) {1};
+            \node[treecircle] (greedy1) at (-1.5,1.85) {3};
+            \node[treecircle] (greedy2) at (1.5,1.85) {2};
+            \node[treecircle] (greedy3) at (-2.05,0.45) {4};
+            \node[discardcircle] (greedy4) at (0,0.45) {};
+            \node[pendingcircle] (greedy5) at (2.05,0.45) {};
 
-\subsubsection{A*}
-En A* el control es más fino: no solo se evita repetir estados, sino que además se conserva el mejor costo conocido para cada estado.
+            \draw[treeedge] (greedy0) -- (greedy1);
+            \draw[treeedge] (greedy0) -- (greedy2);
+            \draw[treeedge] (greedy1) -- (greedy3);
+            \draw[treeedge] (greedy2) -- (greedy4);
+            \draw[treeedge] (greedy2) -- (greedy5);
+            \treeopdraw{greedy0}{greedy1}{0.46}{(-0.28,0.22)}{(0.00,0.22)}
+            \treeopdraw{greedy0}{greedy2}{0.50}{(0.24,0.30)}{(0.24,0.06)}
+            \treeopdraw{greedy1}{greedy3}{0.54}{(-0.24,0.02)}{(0.04,0.02)}
+            \treeopdraw{greedy2}{greedy4}{0.50}{(-0.18,-0.10)}{(-0.18,0.14)}
+            \treeopdraw{greedy2}{greedy5}{0.50}{(0.18,0.24)}{(0.18,0.00)}
+        \end{tikzpicture}\\[-0.05cm]
+        {\scriptsize
+        \begin{tabular}{@{}l@{}}
+        1: $(0,0),\emptyset$; $h=2$ \\
+        3: $(0,1),\emptyset$; $h=3$ \\
+        2: $(1,0),\emptyset$; $h=1$ \\
+        4: $(0,2),\emptyset$; $h=4$ \\
+        desc.: $(0,0),\emptyset$; $h=2$ \\
+        pend.: $(2,0),\{p\}$; $h=5$
+        \end{tabular}}
+    \end{minipage}
+    \caption{Árbol parcial de expansión de la búsqueda avara en el caso reducido. El número de cada nodo indica el orden de expansión observado en la implementación y las flechas muestran el movimiento aplicado.}
+    \label{fig:avara-reducido}
+\end{figure}
 
-\begin{lstlisting}[style=pythonstyle,caption={Control de repetición de estados en A*}]
+La \textbf{Figura~\ref{fig:avara-reducido}} muestra que la búsqueda avara puede posponer el estado donde ya se recogió el pasajero porque desde allí la distancia al destino aún es grande. En otras palabras, la heurística por sí sola ignora el costo ya invertido.
+
+\subsection{Algoritmo A*}
+El algoritmo A* combina dos ideas: lo que ya costó llegar al nodo actual y lo que todavía se estima que falta.
+
+\begin{lstlisting}[style=pythonstyle,caption={Implementación de A* (prioridad por f = g + h)}]
+heapq.heappush(frontera, (nodo_inicial.f, contador, nodo_inicial))
+
+for vecino in grid.get_vecinos(nodo):
+    vecino.h = calcular_heuristica(vecino, destino, pasajeros, meta_pasajeros)
+    vecino.f = vecino.g + vecino.h
+    prioridad = vecino.f
+    heapq.heappush(frontera, (prioridad, contador, vecino))
+\end{lstlisting}
+
+En A*, el control de ciclos usa \texttt{best\_g} para conservar la mejor ruta a cada estado:
+
+\begin{lstlisting}[style=pythonstyle,caption={Control de ciclos en A* con best	extunderscore g}]
+estado = (nodo.posicion, nodo.pasajeros_recogidos)
 if estado in best_g and best_g[estado] <= nodo.g:
     continue
 best_g[estado] = nodo.g
 \end{lstlisting}
 
-Así, un estado solo se descarta si ya fue alcanzado antes con un costo menor o igual. Si se encuentra el mismo estado con mejor costo, se conserva la nueva alternativa. Este mecanismo evita ciclos costosos y mantiene la lógica correcta de A*.
+Con la notación usual, A* ordena usando \(f = g + h\). Eso recoge la idea central: \texttt{ucs} empuja la búsqueda a reducir el costo acumulado, la avara intenta reducir la estimación restante, y A* balancea ambas cantidades para priorizar el nodo con menor costo total estimado.
 
-\subsection{Precisiones sobre los algoritmos no completos}
-Dentro de la práctica del proyecto, los casos más delicados frente a ciclos son \texttt{dfs} y \texttt{avara}. En ambos algoritmos la estrategia de expansión puede quedarse atrapada explorando repeticiones si no existe control explícito de estados. Por eso, en esta implementación:
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{0.52\textwidth}
+        \centering
+        \begin{tikzpicture}[x=0.92cm,y=0.92cm]
+            \useasboundingbox (-2.8,-0.7) rectangle (3.7,4.15);
+            \searchcirclenoderight{astar0}{(0,3.55)}{1}{$(0,0),\emptyset$\\$f=2$}{treecircle}{1.8cm}
+            \searchcirclenodebelow{astar1}{(-1.45,2.3)}{}{ $(0,1),\emptyset$\\$g=7,\ h=3$\\$f=10$}{pendingcircle}{1.8cm}
+            \searchcirclenoderight{astar2}{(0,2.3)}{2}{$(1,0),\emptyset$\\$g=1,\ h=1$\\$f=2$}{treecircle}{2.25cm}
+            \searchcirclenoderight{astar3}{(0,1.05)}{3}{$(2,0),\{p\}$\\$g=2,\ h=5$\\$f=7$}{treecircle}{2.25cm}
+            \searchcirclenoderight{astar4}{(0,-0.2)}{4}{$(2,1),\{p\}$\\$g=3,\ h=4$\\$f=7$}{treecircle}{2.25cm}
 
+            \draw[treeedge] (astar0) -- (astar1);
+            \draw[treeedge] (astar0) -- (astar2);
+            \draw[treeedge] (astar2) -- (astar3);
+            \draw[treeedge] (astar3) -- (astar4);
+            \treeopdraw{astar0}{astar1}{0.48}{(-0.26,0.20)}{(0.02,0.20)}
+            \treeopdraw{astar0}{astar2}{0.50}{(0.18,0.28)}{(0.18,0.04)}
+            \treeopdraw{astar2}{astar3}{0.54}{(0.18,0.22)}{(0.18,-0.02)}
+            \treeopdraw{astar3}{astar4}{0.54}{(0.24,0.00)}{(0.50,0.00)}
+        \end{tikzpicture}
+    \end{minipage}
+    \caption{Árbol parcial de expansión de A* en el caso reducido. Las flechas muestran el movimiento aplicado en cada expansión.}
+    \label{fig:astar-reducido}
+\end{figure}
+
+A diferencia de la \textbf{Figura~\ref{fig:avara-reducido}}, la \textbf{Figura~\ref{fig:astar-reducido}} muestra que A* no pospone el estado donde ya se recogió el pasajero, porque combina lo recorrido con lo que todavía falta.
+
+\subsection{Por qué la heurística de A* es admisible}
+Para usar A* con seguridad, basta verificar una idea muy simple: la heurística no debe exagerar el costo que aún falta por recorrer.
+
+El mapa solo permite moverse arriba, abajo, izquierda y derecha, y cada paso cuesta como mínimo \(1\). Por esa razón, la distancia Manhattan siempre sirve como una estimación conservadora: puede quedarse corta, pero no puede decir que falta más de lo que realmente cuesta llegar.
+
+La intuición se entiende en dos situaciones:
 \begin{itemize}
-    \item \texttt{dfs} evita ciclos mediante el conjunto \texttt{visitados} basado en \((posicion, pasajeros\_recogidos)\);
-    \item \texttt{avara} usa exactamente el mismo criterio de estado para no reexpandir estados ya explorados;
-    \item en ambos casos, el retorno a una casilla previamente recorrida sí se permite cuando el conjunto de pasajeros recogidos ya cambió.
+    \item \textbf{Si todavía faltan pasajeros,} la heurística toma la distancia al pasajero pendiente más cercano. Como cualquier solución válida tiene que llegar primero a algún pasajero antes de terminar la tarea, esa estimación no puede ser mayor que el costo real que aún falta.
+    \item \textbf{Si ya no faltan pasajeros,} la heurística toma la distancia Manhattan hasta el destino. De nuevo, esa distancia tampoco supera el costo real restante, porque llegar al destino exige al menos esa cantidad de movimientos.
 \end{itemize}
 
-Esta última propiedad es la que hace compatible la prevención de ciclos con el requisito del enunciado.
+En otras palabras, para cualquier estado se cumple que la heurística nunca sobreestima el costo pendiente, es decir, \(h(n) \leq C^*(n)\).
+
+Eso es justamente lo que significa que la heurística sea \textbf{admisible}. Gracias a eso, A* conserva su propiedad más importante: cuando encuentra una solución, esa solución es óptima en costo.
+
+\subsection{Control de estados repetidos en avara y A*}
+En la implementación, la búsqueda avara usa un conjunto \texttt{visitados} sobre el estado compuesto \texttt{(posicion, pasajeros\_recogidos)}. A* emplea un criterio más fino: mantiene en \texttt{best\_g} el mejor costo conocido para cada estado y descarta solo las repeticiones dominadas por una ruta mejor.
+
+Esta decisión conecta bien la teoría con la práctica:
+\begin{itemize}
+    \item un mismo estado puede aparecer varias veces en el árbol de búsqueda;
+    \item no todas esas apariciones merecen expandirse;
+    \item en A* solo se conserva la versión útil de un estado, es decir, la de menor costo acumulado.
+\end{itemize}
+
+\section{Resumen de propiedades de los algoritmos}
+El Cuadro~\ref{tab:propiedades} resume las propiedades clásicas y su interpretación en el contexto del robotaxi.
+
+\begin{table}[!ht]
+    \centering
+    \small
+    \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.2cm}|>{\raggedright\arraybackslash}p{3cm}|>{\raggedright\arraybackslash}p{3.9cm}|>{\raggedright\arraybackslash}X|}
+        \hline
+        \textbf{Algoritmo} & \textbf{Criterio de expansión} & \textbf{Propiedad general} & \textbf{Interpretación} \\
+        \hline
+        Amplitud & menor profundidad & completa; óptima solo si todos los pasos cuestan lo mismo & encuentra rutas cortas en número de acciones, pero no necesariamente de menor costo porque el mapa tiene casillas de costo \(7\) \\
+        \hline
+        Costo uniforme & menor costo acumulado & completa y óptima con costos positivos & funciona como referencia exacta de costo óptimo en el mapa del robotaxi \\
+        \hline
+        Profundidad evitando ciclos & mayor profundidad & no óptima; en árboles infinitos no es completa en general & aquí termina porque el espacio de estados es finito y se usa control de ciclos, pero puede producir soluciones costosas \\
+        \hline
+        Avara & mejor valor heurístico & no óptima; sin control de ciclos no es completa en general & en esta implementación termina por el control de estados, pero su criterio puede tomar decisiones miopes \\
+        \hline
+        A* & mejor suma entre costo recorrido y estimación restante & completa y óptima si la heurística es admisible & combina el costo real recorrido con la estimación restante y conserva optimalidad para el problema planteado \\
+        \hline
+    \end{tabularx}
+    \caption{Resumen de propiedades de los algoritmos y su interpretación.}
+    \label{tab:propiedades}
+\end{table}
 
 \section{Interfaz y ejecución}
-La aplicación carga un archivo de texto, dibuja el mapa, permite escoger la familia de búsqueda y luego el algoritmo concreto desde la interfaz gráfica. Posteriormente anima el recorrido y muestra un reporte con:
-
+El proyecto no se limita a resolver el problema en abstracto. También ofrece una interfaz gráfica que permite:
 \begin{itemize}
-    \item nodos expandidos;
-    \item profundidad;
-    \item tiempo de cómputo;
-    \item costo, cuando aplica;
-    \item heurística final, en el caso de la búsqueda informada.
+    \item cargar un mapa desde archivo;
+    \item visualizar el ambiente urbano;
+    \item seleccionar la familia de búsqueda y el algoritmo concreto;
+    \item animar el camino solución;
+    \item reportar profundidad, nodos expandidos, costo, tiempo de búsqueda y heurística final cuando aplica.
 \end{itemize}
 
-La versión actual del proyecto fue reorganizada para dejar una interfaz persistente: el usuario puede mantener el mismo mapa en pantalla, probar diferentes algoritmos y cambiar de mapa desde la misma sesión sin cerrar el programa.
+La parte práctica permite observar en el mapa cómo se comporta cada búsqueda.
 
 \section{Conclusiones}
-El proyecto permite contrastar claramente el comportamiento de búsquedas no informadas e informadas sobre un mismo ambiente con costos variables. La principal ventaja de la modelación adoptada es que el estado incluye tanto la posición como los pasajeros ya recogidos, lo que resuelve correctamente el requisito de evitar ciclos sin impedir retornos necesarios después de recoger pasajeros.
+\begin{itemize}
+    \item \textbf{Amplitud:} ventaja: encuentra soluciones con pocos movimientos; desventaja: no minimiza bien el costo cuando hay casillas caras.
+    \item \textbf{Profundidad:} ventaja: puede avanzar rápido por una rama y usar poca memoria; desventaja: puede alejarse mucho de una buena solución y producir rutas costosas.
+    \item \textbf{Costo uniforme:} ventaja: garantiza la ruta de menor costo; desventaja: suele expandir más nodos y tardar más que otras estrategias.
+    \item \textbf{Avara:} ventaja: orienta la búsqueda hacia lo que parece prometedor y normalmente reduce exploración; desventaja: puede tomar decisiones miopes porque no considera el costo ya acumulado.
+    \item \textbf{A*:} ventaja: combina costo recorrido y heurística, por lo que encuentra soluciones óptimas cuando la heurística es admisible; desventaja: requiere más control y puede consumir más memoria que una búsqueda más simple.
+\end{itemize}
 
-La heurística basada en distancia Manhattan al pasajero faltante más cercano, o al destino cuando ya no faltan pasajeros, es simple, eficiente y admisible bajo las reglas del problema. Esto hace que A* sea una alternativa sólida para encontrar soluciones de bajo costo dentro de la ciudad modelada.
-
-\vspace{0.5cm}
-\noindent\textbf{Nota de edición:} antes de entregar, reemplace los campos de estudiantes y profesor en la portada por los nombres reales del grupo.
 
 \end{document}
