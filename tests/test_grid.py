@@ -8,6 +8,17 @@ from mundo import Grid, leer_mapa
 
 
 def probar_grid():
+    """Ejecuta comprobaciones manuales sobre la cuadrícula predeterminada.
+
+    Muestra dimensiones, posiciones especiales y el resultado esperado de los
+    métodos básicos del mapa.
+
+    Returns:
+        None.
+
+    Example:
+        >>> probar_grid()  # doctest: +SKIP
+    """
     print("=" * 50)
     print("PRUEBA DE LA CLASE GRID")
     print("=" * 50)

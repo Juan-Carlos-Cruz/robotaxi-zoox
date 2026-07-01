@@ -36,7 +36,32 @@ COLOR_OVERLAY = (8, 12, 16, 175)
 
 
 class RobotaxiApp:
+    """Coordina la interfaz, las búsquedas, la animación y el audio.
+
+    Attributes:
+        grid (Grid | None): Mapa activo.
+        visualizador (Visualizador | None): Renderizador del mapa.
+        selected_algorithm (str | None): Clave del algoritmo elegido.
+        current_result (dict | None): Resultado de la última búsqueda.
+        animating (bool): Indica si el taxi está recorriendo una solución.
+
+    Example:
+        >>> app = RobotaxiApp()  # doctest: +SKIP
+        >>> app.grid is None  # doctest: +SKIP
+        True
+    """
+
     def __init__(self):
+        """Inicializa Pygame y el estado completo de la aplicación.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app = RobotaxiApp()  # doctest: +SKIP
+            >>> app.modal_visible  # doctest: +SKIP
+            False
+        """
         pygame.init()
         self.window = pygame.display.set_mode(WINDOW_SIZE, pygame.RESIZABLE)
         pygame.display.set_caption(TITULO_APP)
@@ -83,6 +108,16 @@ class RobotaxiApp:
         self.modal_x_button = pygame.Rect(0, 0, 0, 0)
 
     def iniciar(self):
+        """Solicita el mapa inicial y lo incorpora a la aplicación.
+
+        Returns:
+            bool: ``True`` si se seleccionó y cargó un mapa válido.
+
+        Example:
+            >>> app = RobotaxiApp()  # doctest: +SKIP
+            >>> app.iniciar()  # doctest: +SKIP
+            True
+        """
         print("Abriendo selector de mapa...")
         ruta = seleccionar_archivo()
         if not ruta:
@@ -91,6 +126,19 @@ class RobotaxiApp:
         return self._cargar_mapa(ruta)
 
     def _cargar_mapa(self, ruta):
+        """Carga un mapa y reinicia el estado de resultado y animación.
+
+        Args:
+            ruta (str | Path): Ruta del archivo de mapa.
+
+        Returns:
+            bool: ``True`` si el mapa se cargó correctamente.
+
+        Example:
+            >>> app = RobotaxiApp()  # doctest: +SKIP
+            >>> app._cargar_mapa("mapas/test/Prueba1.txt")  # doctest: +SKIP
+            True
+        """
         grid = cargar_grid_desde_ruta(ruta)
         if grid is None:
             self.status_message = "No se pudo cargar el mapa seleccionado."
@@ -120,6 +168,17 @@ class RobotaxiApp:
         return True
 
     def ejecutar(self):
+        """Ejecuta el bucle principal hasta que se solicita el cierre.
+
+        Procesa eventos, actualiza la animación, dibuja cada fotograma y
+        libera los recursos de audio y Pygame al terminar.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app.ejecutar()  # doctest: +SKIP
+        """
         self.audio.play_ambient()
         while True:
             self._actualizar_layout()
@@ -133,6 +192,16 @@ class RobotaxiApp:
         pygame.quit()
 
     def _actualizar_layout(self):
+        """Recalcula paneles y botones según el tamaño de la ventana.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._actualizar_layout()  # doctest: +SKIP
+            >>> app.panel_rect.width == PANEL_WIDTH  # doctest: +SKIP
+            True
+        """
         full = self.window.get_rect()
         self.header_rect = pygame.Rect(APP_PADDING, APP_PADDING, full.width - APP_PADDING * 2, HEADER_HEIGHT)
 
@@ -175,6 +244,17 @@ class RobotaxiApp:
             self.visualizador.set_surface(self.window, self.map_panel_rect.inflate(-18, -18))
 
     def _procesar_eventos(self):
+        """Atiende los eventos pendientes de Pygame.
+
+        Returns:
+            bool: ``False`` si se recibió un evento de cierre; ``True`` en los
+            demás casos.
+
+        Example:
+            >>> continuar = app._procesar_eventos()  # doctest: +SKIP
+            >>> isinstance(continuar, bool)  # doctest: +SKIP
+            True
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
@@ -196,6 +276,17 @@ class RobotaxiApp:
         return True
 
     def _manejar_click(self, pos):
+        """Procesa un clic según el control ubicado en la posición indicada.
+
+        Args:
+            pos (tuple[int, int]): Coordenadas del clic en la ventana.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._manejar_click((100, 100))  # doctest: +SKIP
+        """
         if self.modal_visible:
             if self.modal_close_button.collidepoint(pos) or self.modal_x_button.collidepoint(pos):
                 self.audio.play_ui_click()
@@ -243,6 +334,18 @@ class RobotaxiApp:
                 return
 
     def _ejecutar_algoritmo(self, algorithm_key, label):
+        """Ejecuta una búsqueda y prepara la animación de su resultado.
+
+        Args:
+            algorithm_key (str): Clave registrada del algoritmo.
+            label (str): Nombre legible mostrado en la interfaz.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._ejecutar_algoritmo("amplitud", "Amplitud")  # doctest: +SKIP
+        """
         if self.grid is None:
             return
 
@@ -286,6 +389,17 @@ class RobotaxiApp:
             self.status_message = f"Último algoritmo ejecutado: {self.animation_algorithm}"
 
     def _actualizar_animacion(self):
+        """Avanza la animación de acuerdo con el tiempo transcurrido.
+
+        Al llegar a una nueva celda reproduce sus efectos y, al finalizar,
+        muestra el modal con las métricas de la búsqueda.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._actualizar_animacion()  # doctest: +SKIP
+        """
         if not self.animating or not self.displayed_path:
             return
 
@@ -314,6 +428,17 @@ class RobotaxiApp:
         self.status_message = f"Último algoritmo ejecutado: {self.animation_algorithm}"
 
     def _procesar_audio_de_celda(self, posicion):
+        """Activa los efectos asociados con una celda visitada.
+
+        Args:
+            posicion (tuple[int, int]): Posición alcanzada durante la animación.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._procesar_audio_de_celda((0, 1))  # doctest: +SKIP
+        """
         if self.grid is None:
             return
 
@@ -328,11 +453,41 @@ class RobotaxiApp:
             self.audio.play_pickup_horn()
 
     def _mostrar_modal(self, title, lines):
+        """Configura y abre un cuadro modal.
+
+        Args:
+            title (str): Encabezado del modal.
+            lines (list[str]): Líneas de contenido que se mostrarán.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._mostrar_modal("Resultado", ["Costo: 4"])  # doctest: +SKIP
+            >>> app.modal_visible  # doctest: +SKIP
+            True
+        """
         self.modal_title = title
         self.modal_lines = lines
         self.modal_visible = True
 
     def _lineas_resultado(self, resultado):
+        """Convierte las métricas de búsqueda en líneas para el modal.
+
+        Args:
+            resultado (Mapping[str, object]): Métricas de una solución.
+
+        Returns:
+            list[str]: Textos listos para ser renderizados.
+
+        Example:
+            >>> lineas = app._lineas_resultado({  # doctest: +SKIP
+            ...     "nodos_expandidos": 2, "profundidad": 1,
+            ...     "camino": [(0, 0), (0, 1)], "costo": 1
+            ... })
+            >>> "Costo total: 1" in lineas  # doctest: +SKIP
+            True
+        """
         tiempo_busqueda_ms = resultado.get("tiempo_busqueda_ms", resultado.get("tiempo", 0))
         lineas = [
             f"Nodos expandidos: {resultado['nodos_expandidos']}",
@@ -346,6 +501,14 @@ class RobotaxiApp:
         return lineas
 
     def _dibujar(self):
+        """Dibuja un fotograma completo y actualiza la pantalla.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._dibujar()  # doctest: +SKIP
+        """
         self.window.fill(COLOR_APP_BG)
         self._dibujar_header()
         self._dibujar_panel_mapa()
@@ -355,6 +518,14 @@ class RobotaxiApp:
         pygame.display.flip()
 
     def _dibujar_header(self):
+        """Dibuja el encabezado y sus controles de audio y mapa.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._dibujar_header()  # doctest: +SKIP
+        """
         pygame.draw.rect(self.window, COLOR_PANEL, self.header_rect, border_radius=24)
         pygame.draw.rect(self.window, COLOR_BORDER, self.header_rect, 1, border_radius=24)
 
@@ -384,6 +555,14 @@ class RobotaxiApp:
         )
 
     def _dibujar_panel_mapa(self):
+        """Dibuja el contenedor del mapa y el estado actual del taxi.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._dibujar_panel_mapa()  # doctest: +SKIP
+        """
         pygame.draw.rect(self.window, COLOR_PANEL, self.map_panel_rect, border_radius=28)
         pygame.draw.rect(self.window, COLOR_BORDER, self.map_panel_rect, 1, border_radius=28)
 
@@ -399,6 +578,14 @@ class RobotaxiApp:
         self.window.blit(etiqueta, (self.map_panel_rect.x + 24, self.map_panel_rect.y + 16))
 
     def _dibujar_panel_lateral(self):
+        """Dibuja categorías, algoritmos y estado de la búsqueda.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._dibujar_panel_lateral()  # doctest: +SKIP
+        """
         pygame.draw.rect(self.window, COLOR_PANEL, self.panel_rect, border_radius=28)
         pygame.draw.rect(self.window, COLOR_BORDER, self.panel_rect, 1, border_radius=28)
 
@@ -460,6 +647,14 @@ class RobotaxiApp:
         self.window.blit(nota, (nota_rect.x + 16, nota_rect.y + 20))
 
     def _dibujar_modal(self):
+        """Dibuja el modal activo sobre una capa semitransparente.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._dibujar_modal()  # doctest: +SKIP
+        """
         overlay = pygame.Surface(self.window.get_size(), pygame.SRCALPHA)
         overlay.fill(COLOR_OVERLAY)
         self.window.blit(overlay, (0, 0))
@@ -491,6 +686,24 @@ class RobotaxiApp:
         )
 
     def _dibujar_boton(self, rect, texto, activo=False, color_base=COLOR_CARD_ALT, color_hover=None):
+        """Dibuja un botón con estados normal, activo y bajo el cursor.
+
+        Args:
+            rect (pygame.Rect): Área ocupada por el botón.
+            texto (str): Etiqueta del botón.
+            activo (bool): Indica si debe resaltarse como seleccionado.
+            color_base (tuple[int, int, int]): Color normal del fondo.
+            color_hover (tuple[int, int, int] | None): Color al pasar el cursor;
+                si es ``None``, conserva ``color_base``.
+
+        Returns:
+            None.
+
+        Example:
+            >>> app._dibujar_boton(  # doctest: +SKIP
+            ...     pygame.Rect(0, 0, 100, 40), "Aceptar"
+            ... )
+        """
         mouse_pos = pygame.mouse.get_pos()
         hover = rect.collidepoint(mouse_pos)
         color = color_base
@@ -512,6 +725,17 @@ class RobotaxiApp:
         self.window.blit(label, (rect.centerx - label.get_width() // 2, rect.centery - label.get_height() // 2))
 
     def _texto_boton_ambiente(self):
+        """Obtiene la etiqueta del botón de música ambiente.
+
+        Returns:
+            str: Estado visible del audio: no disponible, activado o
+            desactivado.
+
+        Example:
+            >>> texto = app._texto_boton_ambiente()  # doctest: +SKIP
+            >>> texto.startswith("Ambiente")  # doctest: +SKIP
+            True
+        """
         if not self.audio.enabled:
             return "Ambiente N/D"
         if self.audio.ambient_enabled:
@@ -520,6 +744,16 @@ class RobotaxiApp:
 
 
 def main():
+    """Inicia la aplicación y ejecuta su bucle principal.
+
+    Si el usuario no selecciona un mapa, cierra Pygame y termina el proceso.
+
+    Returns:
+        None.
+
+    Example:
+        >>> main()  # doctest: +SKIP
+    """
     app = RobotaxiApp()
     if not app.iniciar():
         pygame.quit()

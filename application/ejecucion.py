@@ -7,6 +7,24 @@ from .config import ALGORITHM_CONFIG
 
 
 def ejecutar_algoritmo(nombre, grid):
+    """Ejecuta el algoritmo configurado sobre una cuadrícula.
+
+    Args:
+        nombre (str): Clave registrada en ``ALGORITHM_CONFIG``.
+        grid (Grid): Mapa con inicio, destino y pasajeros identificados.
+
+    Returns:
+        dict[str, object] | None: Resultado de la búsqueda o ``None`` si no
+        existe solución.
+
+    Raises:
+        KeyError: Si ``nombre`` no está registrado en la configuración.
+
+    Example:
+        >>> from mundo import Grid
+        >>> ejecutar_algoritmo("amplitud", Grid([[2, 5]]))["costo"]
+        1
+    """
     tipo_busqueda, modo = ALGORITHM_CONFIG[nombre]
 
     if tipo_busqueda == "informada":
@@ -18,6 +36,23 @@ def ejecutar_algoritmo(nombre, grid):
 
 
 def imprimir_resultado(resultado):
+    """Imprime por consola las métricas de una búsqueda.
+
+    Args:
+        resultado (Mapping[str, object]): Resultado con camino, costo, nodos
+            expandidos y profundidad; puede incluir tiempo y heurística.
+
+    Returns:
+        None.
+
+    Example:
+        >>> imprimir_resultado({
+        ...     "costo": 1, "camino": [(0, 0), (0, 1)],
+        ...     "nodos_expandidos": 2, "profundidad": 1
+        ... })  # doctest: +ELLIPSIS
+        ✅ Solución encontrada. Costo: 1
+        ...
+    """
     tiempo_busqueda_ms = resultado.get("tiempo_busqueda_ms", resultado.get("tiempo"))
     print(f"✅ Solución encontrada. Costo: {resultado['costo']}")
     print(f"Pasos: {len(resultado['camino'])}")

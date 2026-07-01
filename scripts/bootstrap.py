@@ -16,14 +16,45 @@ SUPPORTED_MINORS = (13, 12, 11, 10)
 
 
 class BootstrapError(RuntimeError):
-    pass
+    """Indica un fallo controlado al preparar o validar el entorno.
+
+    Example:
+        >>> raise BootstrapError("Entorno incompleto")
+        Traceback (most recent call last):
+        ...
+        BootstrapError: Entorno incompleto
+    """
 
 
 def log(message: str) -> None:
+    """Imprime un mensaje y fuerza su escritura inmediata.
+
+    Args:
+        message (str): Texto que se enviará a la salida estándar.
+
+    Returns:
+        None.
+
+    Example:
+        >>> log("Entorno listo")
+        Entorno listo
+    """
     print(message, flush=True)
 
 
 def format_command(command: list[str]) -> str:
+    """Formatea un comando para mostrarlo de forma segura en la terminal.
+
+    Args:
+        command (list[str]): Programa y argumentos.
+
+    Returns:
+        str: Comando con cada componente escapado para la shell.
+
+    Example:
+        >>> format_command(["python", "archivo con espacios.py"])
+        "python 'archivo con espacios.py'"
+    """
     return " ".join(shlex.quote(part) for part in command)
 
 
@@ -34,6 +65,25 @@ def run(
     capture_output: bool = False,
     cwd: Path = PROJECT_ROOT,
 ) -> subprocess.CompletedProcess[str]:
+    """Muestra y ejecuta un proceso externo.
+
+    Args:
+        command (list[str]): Programa y argumentos que se ejecutarán.
+        check (bool): Si es ``True``, falla ante un código distinto de cero.
+        capture_output (bool): Si se capturan las salidas estándar y de error.
+        cwd (Path): Directorio de trabajo del proceso.
+
+    Returns:
+        subprocess.CompletedProcess[str]: Resultado del proceso.
+
+    Raises:
+        subprocess.CalledProcessError: Si ``check`` está activo y el proceso
+            termina con error.
+
+    Example:
+        >>> run(["python", "--version"], capture_output=True).returncode
+        0
+    """
     log(f"$ {format_command(command)}")
     return subprocess.run(
         command,
@@ -45,6 +95,18 @@ def run(
 
 
 def unique_commands(commands: list[list[str]]) -> list[list[str]]:
+    """Elimina comandos duplicados conservando el orden.
+
+    Args:
+        commands (list[list[str]]): Comandos candidatos.
+
+    Returns:
+        list[list[str]]: Comandos únicos.
+
+    Example:
+        >>> unique_commands([["python"], ["python"], ["python3"]])
+        [['python'], ['python3']]
+    """
     seen = set()
     unique = []
     for command in commands:
@@ -57,6 +119,18 @@ def unique_commands(commands: list[list[str]]) -> list[list[str]]:
 
 
 def candidate_commands(cli_python: str | None) -> list[list[str]]:
+    """Construye la lista de intérpretes de Python que se deben probar.
+
+    Args:
+        cli_python (str | None): Comando indicado explícitamente por el usuario.
+
+    Returns:
+        list[list[str]]: Comandos candidatos sin duplicados.
+
+    Example:
+        >>> candidate_commands("python3.12")
+        [['python3.12']]
+    """
     if cli_python:
         return [shlex.split(cli_python)]
 
@@ -84,6 +158,19 @@ def candidate_commands(cli_python: str | None) -> list[list[str]]:
 
 
 def probe_python(command: list[str]) -> dict | None:
+    """Consulta la versión y plataforma de un intérprete.
+
+    Args:
+        command (list[str]): Comando base del intérprete.
+
+    Returns:
+        dict | None: Metadatos del intérprete o ``None`` si no es utilizable.
+
+    Example:
+        >>> info = probe_python([sys.executable])
+        >>> info["major"] == sys.version_info.major
+        True
+    """
     probe = (
         "import json, platform, sys; "
         "print(json.dumps({"
@@ -112,6 +199,21 @@ def probe_python(command: list[str]) -> dict | None:
 
 
 def choose_python(cli_python: str | None) -> dict:
+    """Selecciona el intérprete compatible de mayor preferencia.
+
+    Args:
+        cli_python (str | None): Comando solicitado explícitamente.
+
+    Returns:
+        dict: Metadatos del intérprete elegido.
+
+    Raises:
+        BootstrapError: Si no se encuentra ningún intérprete utilizable.
+
+    Example:
+        >>> choose_python(sys.executable)["major"]
+        3
+    """
     discovered = []
     for command in candidate_commands(cli_python):
         info = probe_python(command)
@@ -130,17 +232,57 @@ def choose_python(cli_python: str | None) -> dict:
 
 
 def venv_dir(python_info: dict) -> Path:
+    """Calcula el directorio del entorno virtual para una versión.
+
+    Args:
+        python_info (dict): Metadatos con las claves ``major`` y ``minor``.
+
+    Returns:
+        Path: Ruta del entorno virtual versionado.
+
+    Example:
+        >>> venv_dir({"major": 3, "minor": 12}).name
+        '.venv-py312'
+    """
     suffix = f"py{python_info['major']}{python_info['minor']}"
     return PROJECT_ROOT / f".venv-{suffix}"
 
 
 def venv_python_path(directory: Path) -> Path:
+    """Obtiene el ejecutable de Python dentro de un entorno virtual.
+
+    Args:
+        directory (Path): Directorio raíz del entorno.
+
+    Returns:
+        Path: Ruta del ejecutable según el sistema operativo.
+
+    Example:
+        >>> venv_python_path(Path(".venv")).name in {"python", "python.exe"}
+        True
+    """
     if platform.system() == "Windows":
         return directory / "Scripts" / "python.exe"
     return directory / "bin" / "python"
 
 
 def ensure_venv(python_info: dict) -> Path:
+    """Crea el entorno virtual si todavía no existe.
+
+    Args:
+        python_info (dict): Metadatos y comando del intérprete base.
+
+    Returns:
+        Path: Ejecutable Python del entorno virtual.
+
+    Raises:
+        subprocess.CalledProcessError: Si falla la creación.
+
+    Example:
+        >>> executable = ensure_venv(info)  # doctest: +SKIP
+        >>> executable.exists()  # doctest: +SKIP
+        True
+    """
     directory = venv_dir(python_info)
     python_executable = venv_python_path(directory)
     if python_executable.exists():
@@ -155,6 +297,18 @@ def ensure_venv(python_info: dict) -> Path:
 
 
 def requirements_file() -> Path:
+    """Localiza el archivo de dependencias del proyecto.
+
+    Returns:
+        Path: Primer archivo de requisitos existente.
+
+    Raises:
+        BootstrapError: Si no existe ningún nombre reconocido.
+
+    Example:
+        >>> requirements_file().name
+        'requirements.txt'
+    """
     for filename in ("requirements.txt", "requeriments.txt"):
         path = PROJECT_ROOT / filename
         if path.exists():
@@ -163,6 +317,21 @@ def requirements_file() -> Path:
 
 
 def runtime_status(python_executable: Path) -> dict:
+    """Comprueba Python, Tkinter y Pygame dentro de un entorno.
+
+    Args:
+        python_executable (Path): Intérprete que realizará la comprobación.
+
+    Returns:
+        dict: Versión, ejecutable y disponibilidad de módulos.
+
+    Raises:
+        BootstrapError: Si el proceso no produce una respuesta válida.
+
+    Example:
+        >>> runtime_status(Path(sys.executable))["python"]  # doctest: +ELLIPSIS
+        '...python...'
+    """
     script = """
 import json
 import sys
@@ -200,6 +369,16 @@ print(json.dumps(status))
 
 
 def gui_status() -> tuple[bool, str]:
+    """Detecta si el sistema parece disponer de una sesión gráfica.
+
+    Returns:
+        tuple[bool, str]: Disponibilidad estimada y explicación.
+
+    Example:
+        >>> disponible, detalle = gui_status()
+        >>> isinstance(disponible, bool) and isinstance(detalle, str)
+        True
+    """
     system = platform.system()
 
     if system == "Windows":
@@ -219,6 +398,17 @@ def gui_status() -> tuple[bool, str]:
 
 
 def linux_package_manager() -> tuple[list[str], dict[str, list[str]]] | tuple[None, None]:
+    """Detecta un gestor Linux y los paquetes de interfaz requeridos.
+
+    Returns:
+        tuple[list[str], dict[str, list[str]]] | tuple[None, None]: Prefijo de
+        instalación y paquetes, o dos valores nulos si no hay compatibilidad.
+
+    Example:
+        >>> resultado = linux_package_manager()
+        >>> len(resultado)
+        2
+    """
     if shutil.which("dnf"):
         return ["sudo", "dnf", "install", "-y"], {
             "tkinter": ["python3-tkinter"],
@@ -238,6 +428,20 @@ def linux_package_manager() -> tuple[list[str], dict[str, list[str]]] | tuple[No
 
 
 def install_linux_runtime_packages(python_executable: Path) -> None:
+    """Instala en Linux los paquetes faltantes de Tkinter o Pygame.
+
+    Args:
+        python_executable (Path): Intérprete cuyo entorno se valida.
+
+    Returns:
+        None.
+
+    Raises:
+        BootstrapError: Si falta un módulo y no hay gestor compatible.
+
+    Example:
+        >>> install_linux_runtime_packages(Path(sys.executable))  # doctest: +SKIP
+    """
     status = runtime_status(python_executable)
     if status["tkinter"] and status["pygame"]:
         return
@@ -259,6 +463,21 @@ def install_linux_runtime_packages(python_executable: Path) -> None:
 
 
 def install_macos_runtime_packages(python_info: dict, python_executable: Path) -> None:
+    """Instala Tkinter mediante Homebrew cuando falta en macOS.
+
+    Args:
+        python_info (dict): Versión del intérprete base.
+        python_executable (Path): Intérprete del entorno virtual.
+
+    Returns:
+        None.
+
+    Raises:
+        BootstrapError: Si Tkinter no puede instalarse automáticamente.
+
+    Example:
+        >>> install_macos_runtime_packages(info, executable)  # doctest: +SKIP
+    """
     status = runtime_status(python_executable)
     if status["tkinter"] and status["pygame"]:
         return
@@ -291,6 +510,20 @@ def install_macos_runtime_packages(python_info: dict, python_executable: Path) -
 
 
 def install_python_dependencies(python_executable: Path) -> None:
+    """Instala las dependencias Python y aplica alternativas del sistema.
+
+    Args:
+        python_executable (Path): Intérprete del entorno virtual.
+
+    Returns:
+        None.
+
+    Raises:
+        BootstrapError: Si Pygame sigue sin estar disponible.
+
+    Example:
+        >>> install_python_dependencies(executable)  # doctest: +SKIP
+    """
     status = runtime_status(python_executable)
     if status["pygame"]:
         log("pygame ya está disponible en el entorno. Se omite la instalación por pip.")
@@ -331,6 +564,20 @@ def install_python_dependencies(python_executable: Path) -> None:
 
 
 def validate_runtime(python_executable: Path) -> None:
+    """Verifica que Tkinter y Pygame estén disponibles.
+
+    Args:
+        python_executable (Path): Intérprete que se comprobará.
+
+    Returns:
+        None.
+
+    Raises:
+        BootstrapError: Si falta alguno de los módulos requeridos.
+
+    Example:
+        >>> validate_runtime(Path(sys.executable))  # doctest: +SKIP
+    """
     status = runtime_status(python_executable)
     missing = [name for name in ("tkinter", "pygame") if not status[name]]
     if not missing:
@@ -344,6 +591,17 @@ def validate_runtime(python_executable: Path) -> None:
 
 
 def ensure_ready(cli_python: str | None) -> tuple[dict, Path]:
+    """Prepara y valida un entorno completo para la aplicación.
+
+    Args:
+        cli_python (str | None): Intérprete solicitado por el usuario.
+
+    Returns:
+        tuple[dict, Path]: Metadatos del Python base y ejecutable del entorno.
+
+    Example:
+        >>> info, executable = ensure_ready(None)  # doctest: +SKIP
+    """
     python_info = choose_python(cli_python)
     python_executable = ensure_venv(python_info)
     install_python_dependencies(python_executable)
@@ -356,6 +614,18 @@ def ensure_ready(cli_python: str | None) -> tuple[dict, Path]:
 
 
 def command_doctor(cli_python: str | None) -> int:
+    """Ejecuta el diagnóstico de dependencias y sesión gráfica.
+
+    Args:
+        cli_python (str | None): Intérprete solicitado.
+
+    Returns:
+        int: 0 si todo está disponible; 1 si falta algún requisito.
+
+    Example:
+        >>> command_doctor(sys.executable) in {0, 1}
+        True
+    """
     python_info = choose_python(cli_python)
     python_executable = ensure_venv(python_info)
     status = runtime_status(python_executable)
@@ -375,6 +645,18 @@ def command_doctor(cli_python: str | None) -> int:
 
 
 def command_setup(cli_python: str | None) -> int:
+    """Prepara el entorno de ejecución.
+
+    Args:
+        cli_python (str | None): Intérprete solicitado.
+
+    Returns:
+        int: 0 cuando la preparación finaliza correctamente.
+
+    Example:
+        >>> command_setup(None)  # doctest: +SKIP
+        0
+    """
     python_info, python_executable = ensure_ready(cli_python)
     log(
         f"Entorno listo con Python {python_info['major']}.{python_info['minor']} en {python_executable}"
@@ -383,6 +665,21 @@ def command_setup(cli_python: str | None) -> int:
 
 
 def command_run(cli_python: str | None) -> int:
+    """Prepara el entorno y abre la aplicación gráfica.
+
+    Args:
+        cli_python (str | None): Intérprete solicitado.
+
+    Returns:
+        int: 0 cuando la aplicación termina correctamente.
+
+    Raises:
+        BootstrapError: Si no se detecta una sesión gráfica.
+
+    Example:
+        >>> command_run(None)  # doctest: +SKIP
+        0
+    """
     _, python_executable = ensure_ready(cli_python)
     gui_ok, gui_message = gui_status()
     if not gui_ok:
@@ -395,6 +692,18 @@ def command_run(cli_python: str | None) -> int:
 
 
 def command_test(cli_python: str | None) -> int:
+    """Compila los módulos y ejecuta las pruebas principales.
+
+    Args:
+        cli_python (str | None): Intérprete solicitado.
+
+    Returns:
+        int: 0 si todas las comprobaciones finalizan correctamente.
+
+    Example:
+        >>> command_test(None)  # doctest: +SKIP
+        0
+    """
     _, python_executable = ensure_ready(cli_python)
     run(
         [
@@ -415,6 +724,15 @@ def command_test(cli_python: str | None) -> int:
 
 
 def command_clean() -> int:
+    """Elimina los entornos virtuales versionados del proyecto.
+
+    Returns:
+        int: 0 después de completar la limpieza.
+
+    Example:
+        >>> command_clean()  # doctest: +SKIP
+        0
+    """
     for path in PROJECT_ROOT.glob(".venv-py*"):
         if path.is_dir():
             log(f"Eliminando {path.name}")
@@ -423,6 +741,16 @@ def command_clean() -> int:
 
 
 def parse_args() -> argparse.Namespace:
+    """Analiza la acción y el intérprete recibidos por línea de comandos.
+
+    Returns:
+        argparse.Namespace: Argumentos ``command`` y ``python_command``.
+
+    Example:
+        >>> args = parse_args()  # doctest: +SKIP
+        >>> args.command in {"doctor", "setup", "run", "test", "clean"}  # doctest: +SKIP
+        True
+    """
     parser = argparse.ArgumentParser(
         description="Automatiza la instalación, validación y ejecución de robotaxi-zoox."
     )
@@ -440,6 +768,15 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Despacha el subcomando solicitado y normaliza los errores.
+
+    Returns:
+        int: Código de salida; 0 indica éxito.
+
+    Example:
+        >>> main()  # doctest: +SKIP
+        0
+    """
     args = parse_args()
 
     try:

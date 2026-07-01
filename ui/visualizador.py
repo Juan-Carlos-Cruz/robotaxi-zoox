@@ -24,7 +24,39 @@ TAM_CELDA_MAX = 92
 
 
 class Visualizador:
+    """Renderiza el mapa, sus marcadores y la animación del robotaxi.
+
+    Puede crear su propia ventana o dibujar dentro de una superficie y un
+    viewport administrados por la aplicación principal.
+
+    Attributes:
+        grid (Grid): Mapa que se representa.
+        ventana (pygame.Surface): Superficie de dibujo.
+        viewport (pygame.Rect): Área disponible para el mapa.
+        tam_celda (int): Tamaño calculado de cada celda en píxeles.
+        own_display (bool): Indica si controla su propia ventana.
+
+    Example:
+        >>> visualizador = Visualizador(grid)  # doctest: +SKIP
+        >>> visualizador.grid is grid  # doctest: +SKIP
+        True
+    """
+
     def __init__(self, grid, titulo="robotaxi-zoox", surface=None, viewport=None):
+        """Inicializa el renderizador y adapta sus recursos al mapa.
+
+        Args:
+            grid (Grid): Cuadrícula que se mostrará.
+            titulo (str): Título usado al crear una ventana propia.
+            surface (pygame.Surface | None): Superficie externa opcional.
+            viewport (pygame.Rect | tuple | None): Región de dibujo opcional.
+
+        Returns:
+            None.
+
+        Example:
+            >>> Visualizador(grid, surface=surface)  # doctest: +SKIP
+        """
         if not pygame.get_init():
             pygame.init()
 
@@ -60,6 +92,14 @@ class Visualizador:
         self.set_surface(self.ventana, self.viewport)
 
     def _cargar_fuentes(self):
+        """Carga las imágenes originales del taxi, pasajero y terreno.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._cargar_fuentes()  # doctest: +SKIP
+        """
         self.img_taxi_source = self._cargar_fuente_imagen("imagenes", "robot_taxi.png")
         self.img_pasajero_source = self._cargar_fuente_imagen("imagenes", "pasajero_robot.png")
         self.tile_sources = {
@@ -68,6 +108,19 @@ class Visualizador:
         }
 
     def _cargar_fuente_imagen(self, *ruta_relativa):
+        """Carga una imagen del proyecto conservando el canal alfa.
+
+        Args:
+            *ruta_relativa (str): Componentes de la ruta desde la raíz.
+
+        Returns:
+            pygame.Surface | None: Imagen cargada o ``None`` si falla.
+
+        Example:
+            >>> imagen = visualizador._cargar_fuente_imagen(  # doctest: +SKIP
+            ...     "imagenes", "robot_taxi.png"
+            ... )
+        """
         ruta = os.path.join(ruta_raiz, *ruta_relativa)
         try:
             return pygame.image.load(ruta).convert_alpha()
@@ -75,6 +128,19 @@ class Visualizador:
             return None
 
     def set_surface(self, surface, viewport=None):
+        """Asigna la superficie de destino y recalcula el diseño.
+
+        Args:
+            surface (pygame.Surface): Nueva superficie de dibujo.
+            viewport (pygame.Rect | tuple | None): Región disponible; por
+                defecto se usa toda la superficie.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador.set_surface(surface, surface.get_rect())  # doctest: +SKIP
+        """
         nuevo_viewport = pygame.Rect(viewport) if viewport is not None else surface.get_rect()
         if surface is self.ventana and nuevo_viewport == self.viewport:
             return
@@ -83,11 +149,32 @@ class Visualizador:
         self._recalcular_layout()
 
     def set_grid(self, grid):
+        """Cambia el mapa y conserva sus pasajeros como referencia.
+
+        Args:
+            grid (Grid): Nueva cuadrícula que se representará.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador.set_grid(Grid([[2, 5]]))  # doctest: +SKIP
+        """
         self.grid = grid
         self.pasajeros_originales = set(grid.pasajeros)
         self._recalcular_layout()
 
     def _recalcular_layout(self):
+        """Ajusta el mapa, las celdas, los sprites y las fuentes al viewport.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._recalcular_layout()  # doctest: +SKIP
+            >>> visualizador.tam_celda >= TAM_CELDA_MIN  # doctest: +SKIP
+            True
+        """
         if self.grid is None:
             return
 
@@ -119,6 +206,14 @@ class Visualizador:
             self._actualizar_assets_escalados()
 
     def _actualizar_assets_escalados(self):
+        """Regenera sprites, tiles y variantes con el tamaño de celda actual.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._actualizar_assets_escalados()  # doctest: +SKIP
+        """
         self.img_taxi = self._escalar_sprite(self.img_taxi_source, self.taxi_sprite_size, self._crear_taxi_fallback)
         self.img_pasajero = self._escalar_sprite(self.img_pasajero_source, self.passenger_sprite_size, self._crear_pasajero_fallback)
 
@@ -144,11 +239,41 @@ class Visualizador:
         }
 
     def _escalar_imagen(self, source, size, fallback_factory):
+        """Escala una imagen cuadrada o construye su reemplazo.
+
+        Args:
+            source (pygame.Surface | None): Imagen original.
+            size (int): Tamaño final en píxeles.
+            fallback_factory (Callable[[], pygame.Surface]): Creador alterno.
+
+        Returns:
+            pygame.Surface: Imagen escalada o recurso alternativo.
+
+        Example:
+            >>> imagen = visualizador._escalar_imagen(  # doctest: +SKIP
+            ...     None, 32, visualizador._crear_taxi_fallback
+            ... )
+        """
         if source is None:
             return fallback_factory()
         return pygame.transform.smoothscale(source, (size, size))
 
     def _escalar_sprite(self, source, size, fallback_factory):
+        """Recorta el contenido visible de un sprite y lo escala.
+
+        Args:
+            source (pygame.Surface | None): Sprite original.
+            size (int): Ancho y alto finales.
+            fallback_factory (Callable[[], pygame.Surface]): Creador alterno.
+
+        Returns:
+            pygame.Surface: Sprite cuadrado escalado.
+
+        Example:
+            >>> sprite = visualizador._escalar_sprite(  # doctest: +SKIP
+            ...     None, 48, visualizador._crear_pasajero_fallback
+            ... )
+        """
         if source is None:
             return fallback_factory()
 
@@ -168,11 +293,42 @@ class Visualizador:
         return pygame.transform.smoothscale(sprite, (size, size))
 
     def _escalar_superficie(self, source, size, fallback_factory):
+        """Escala un tile o usa una fábrica si el original no existe.
+
+        Args:
+            source (pygame.Surface | None): Tile original.
+            size (int): Tamaño final de cada lado.
+            fallback_factory (Callable[[], pygame.Surface]): Creador alterno.
+
+        Returns:
+            pygame.Surface: Tile listo para dibujarse.
+
+        Example:
+            >>> tile = visualizador._escalar_superficie(  # doctest: +SKIP
+            ...     None, 60, visualizador._crear_tile_asfalto
+            ... )
+        """
         if source is None:
             return fallback_factory()
         return pygame.transform.smoothscale(source, (size, size))
 
     def _escalar_superficie_zoom(self, source, size, fallback_factory, zoom=1.0):
+        """Recorta el centro de un tile aplicando zoom y luego lo escala.
+
+        Args:
+            source (pygame.Surface | None): Imagen de origen.
+            size (int): Tamaño final cuadrado.
+            fallback_factory (Callable[[], pygame.Surface]): Creador alterno.
+            zoom (float): Factor de acercamiento; 1.0 no recorta.
+
+        Returns:
+            pygame.Surface: Tile escalado con el zoom solicitado.
+
+        Example:
+            >>> tile = visualizador._escalar_superficie_zoom(  # doctest: +SKIP
+            ...     source, 60, visualizador._crear_tile_asfalto, 1.2
+            ... )
+        """
         if source is None:
             return fallback_factory()
         if zoom <= 1.0:
@@ -190,6 +346,16 @@ class Visualizador:
         return pygame.transform.smoothscale(tile, (size, size))
 
     def _crear_tile_asfalto(self):
+        """Crea un tile vertical de asfalto cuando no hay imagen disponible.
+
+        Returns:
+            pygame.Surface: Superficie de tamaño ``tam_celda``.
+
+        Example:
+            >>> tile = visualizador._crear_tile_asfalto()  # doctest: +SKIP
+            >>> tile.get_width() == visualizador.tam_celda  # doctest: +SKIP
+            True
+        """
         surface = pygame.Surface((self.tam_celda, self.tam_celda))
         rect = surface.get_rect()
         surface.fill((62, 68, 73))
@@ -212,6 +378,14 @@ class Visualizador:
         return surface
 
     def _crear_tile_asfalto_plano(self):
+        """Crea un tile de asfalto sin marcas de orientación.
+
+        Returns:
+            pygame.Surface: Superficie cuadrada de asfalto.
+
+        Example:
+            >>> visualizador._crear_tile_asfalto_plano()  # doctest: +SKIP
+        """
         surface = pygame.Surface((self.tam_celda, self.tam_celda))
         rect = surface.get_rect()
         surface.fill((61, 66, 71))
@@ -225,6 +399,14 @@ class Visualizador:
         return surface
 
     def _crear_tile_houses(self):
+        """Crea el tile alternativo que representa una celda de muro.
+
+        Returns:
+            pygame.Surface: Ilustración cuadrada de un edificio.
+
+        Example:
+            >>> visualizador._crear_tile_houses()  # doctest: +SKIP
+        """
         surface = pygame.Surface((self.tam_celda, self.tam_celda))
         surface.fill((86, 92, 97))
         offset = max(6, self.tam_celda // 8)
@@ -260,6 +442,17 @@ class Visualizador:
         return surface
 
     def _crear_tile_trafico(self, road_tile=None):
+        """Añade señales de tráfico a un tile de carretera.
+
+        Args:
+            road_tile (pygame.Surface | None): Carretera base opcional.
+
+        Returns:
+            pygame.Surface: Tile de flujo alto con semáforo y advertencia.
+
+        Example:
+            >>> visualizador._crear_tile_trafico()  # doctest: +SKIP
+        """
         if road_tile is None:
             surface = self._crear_tile_asfalto()
         else:
@@ -311,6 +504,14 @@ class Visualizador:
         return surface
 
     def _crear_taxi_fallback(self):
+        """Dibuja un sprite alternativo para el taxi.
+
+        Returns:
+            pygame.Surface: Sprite transparente del vehículo.
+
+        Example:
+            >>> visualizador._crear_taxi_fallback()  # doctest: +SKIP
+        """
         surface = pygame.Surface((self.taxi_sprite_size, self.taxi_sprite_size), pygame.SRCALPHA)
         rect = surface.get_rect()
         pygame.draw.ellipse(surface, (0, 0, 0, 45), rect.inflate(-8, -6).move(0, 3))
@@ -323,6 +524,14 @@ class Visualizador:
         return surface
 
     def _crear_pasajero_fallback(self):
+        """Dibuja un sprite alternativo para los pasajeros.
+
+        Returns:
+            pygame.Surface: Sprite transparente de una persona.
+
+        Example:
+            >>> visualizador._crear_pasajero_fallback()  # doctest: +SKIP
+        """
         surface = pygame.Surface((self.passenger_sprite_size, self.passenger_sprite_size), pygame.SRCALPHA)
         cx = surface.get_width() // 2
         pygame.draw.ellipse(surface, (0, 0, 0, 40), (cx - 12, surface.get_height() - 16, 24, 8))
@@ -336,6 +545,21 @@ class Visualizador:
         return surface
 
     def _dibujar_auto_vertical(self, surface, rect, color):
+        """Dibuja un automóvil vertical simplificado.
+
+        Args:
+            surface (pygame.Surface): Superficie de destino.
+            rect (pygame.Rect): Área ocupada por el automóvil.
+            color (tuple[int, int, int]): Color RGB de la carrocería.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._dibujar_auto_vertical(  # doctest: +SKIP
+            ...     surface, pygame.Rect(0, 0, 20, 40), (255, 0, 0)
+            ... )
+        """
         pygame.draw.rect(surface, color, rect, border_radius=max(4, rect.width // 4))
         ventana = pygame.Rect(rect.left + 2, rect.top + max(3, rect.height // 8), rect.width - 4, rect.height - max(6, rect.height // 4))
         pygame.draw.rect(surface, (73, 99, 123), ventana, border_radius=max(3, rect.width // 4))
@@ -343,6 +567,18 @@ class Visualizador:
         pygame.draw.line(surface, (31, 36, 41), (rect.centerx, ventana.top + 1), (rect.centerx, ventana.bottom - 1), 1)
 
     def _dibujar_semaforo(self, surface, centro):
+        """Dibuja un semáforo con poste y tres luces.
+
+        Args:
+            surface (pygame.Surface): Superficie de destino.
+            centro (tuple[int, int]): Centro del cuerpo del semáforo.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._dibujar_semaforo(surface, (30, 30))  # doctest: +SKIP
+        """
         cuerpo_alto = self.traffic_signal_size
         cuerpo_ancho = max(12, int(cuerpo_alto * 0.44))
         cuerpo = pygame.Rect(0, 0, cuerpo_ancho, cuerpo_alto)
@@ -389,6 +625,19 @@ class Visualizador:
             pygame.draw.circle(surface, (245, 247, 249), centro_luz, max(1, radio // 3))
 
     def _conexiones_calle(self, fila, columna):
+        """Consulta las conexiones transitables de una celda.
+
+        Args:
+            fila (int): Fila de la celda.
+            columna (int): Columna de la celda.
+
+        Returns:
+            dict[str, bool]: Disponibilidad en las cuatro direcciones.
+
+        Example:
+            >>> visualizador._conexiones_calle(0, 0)  # doctest: +SKIP
+            {'up': False, 'down': False, 'left': False, 'right': True}
+        """
         return {
             "up": self.grid.es_transitable(fila - 1, columna),
             "down": self.grid.es_transitable(fila + 1, columna),
@@ -397,6 +646,20 @@ class Visualizador:
         }
 
     def _angulo_calle(self, fila, columna):
+        """Determina la orientación visual dominante de una calle.
+
+        Args:
+            fila (int): Fila de la celda.
+            columna (int): Columna de la celda.
+
+        Returns:
+            int | None: 0 para vertical, 90 para horizontal o ``None`` cuando
+            no existe una orientación dominante.
+
+        Example:
+            >>> visualizador._angulo_calle(0, 0)  # doctest: +SKIP
+            90
+        """
         conexiones = self._conexiones_calle(fila, columna)
         verticales = int(conexiones["up"]) + int(conexiones["down"])
         horizontales = int(conexiones["left"]) + int(conexiones["right"])
@@ -412,6 +675,19 @@ class Visualizador:
         return None
 
     def _tile_para_celda(self, tipo, fila, columna):
+        """Selecciona el tile y su orientación para una celda.
+
+        Args:
+            tipo (int): Código de celda definido por ``Grid``.
+            fila (int): Fila de la celda.
+            columna (int): Columna de la celda.
+
+        Returns:
+            pygame.Surface: Tile listo para dibujarse.
+
+        Example:
+            >>> tile = visualizador._tile_para_celda(Grid.LIBRE, 0, 0)  # doctest: +SKIP
+        """
         if tipo == Grid.MURO:
             return self.tiles["houses"]
 
@@ -427,21 +703,76 @@ class Visualizador:
         return self.tile_variantes["road"][angulo]
 
     def _celda_a_pixel(self, fila, columna):
+        """Convierte una posición del mapa en coordenadas de pantalla.
+
+        Args:
+            fila (int): Fila de la celda.
+            columna (int): Columna de la celda.
+
+        Returns:
+            tuple[int, int]: Esquina superior izquierda en píxeles.
+
+        Example:
+            >>> visualizador._celda_a_pixel(0, 0)  # doctest: +SKIP
+            (0, 0)
+        """
         return (
             self.map_rect.x + columna * self.tam_celda,
             self.map_rect.y + fila * self.tam_celda,
         )
 
     def _blit_centrado(self, surface, x, y):
+        """Dibuja una superficie centrada dentro de una celda.
+
+        Args:
+            surface (pygame.Surface): Imagen que se dibujará.
+            x (int): Coordenada horizontal de la celda.
+            y (int): Coordenada vertical de la celda.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._blit_centrado(sprite, 0, 0)  # doctest: +SKIP
+        """
         rect = surface.get_rect(center=(x + self.tam_celda // 2, y + self.tam_celda // 2))
         self.ventana.blit(surface, rect.topleft)
 
     def _dibujar_sombra_celda(self, rect):
+        """Dibuja una sombra translúcida bajo una celda.
+
+        Args:
+            rect (pygame.Rect): Rectángulo de la celda.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._dibujar_sombra_celda(  # doctest: +SKIP
+            ...     pygame.Rect(0, 0, 60, 60)
+            ... )
+        """
         sombra = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
         pygame.draw.rect(sombra, COLOR_SOMBRA, sombra.get_rect(), border_radius=max(4, self.tam_celda // 10))
         self.ventana.blit(sombra, (rect.x + 1, rect.y + 2))
 
     def _dibujar_etiqueta_marcador(self, x, y, texto, color):
+        """Dibuja la cápsula de texto de un marcador.
+
+        Args:
+            x (int): Coordenada horizontal de la celda.
+            y (int): Coordenada vertical de la celda.
+            texto (str): Texto del marcador.
+            color (tuple[int, int, int]): Color RGB del borde.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._dibujar_etiqueta_marcador(  # doctest: +SKIP
+            ...     0, 0, "Inicio", COLOR_INICIO
+            ... )
+        """
         if self.marker_label_font is None:
             return
 
@@ -466,6 +797,18 @@ class Visualizador:
         self.ventana.blit(label, (etiqueta.x + pad_x, etiqueta.y + pad_y))
 
     def _dibujar_marcador_inicio(self, x, y):
+        """Dibuja el indicador visual de la celda inicial.
+
+        Args:
+            x (int): Coordenada horizontal de la celda.
+            y (int): Coordenada vertical de la celda.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._dibujar_marcador_inicio(0, 0)  # doctest: +SKIP
+        """
         self._dibujar_etiqueta_marcador(x, y, "Inicio", COLOR_INICIO)
         radio = max(8, self.tam_celda // 6)
         centro = (x + radio + 4, y + max(24, self.tam_celda // 2))
@@ -483,6 +826,18 @@ class Visualizador:
         )
 
     def _dibujar_marcador_destino(self, x, y):
+        """Dibuja el indicador visual de la celda de destino.
+
+        Args:
+            x (int): Coordenada horizontal de la celda.
+            y (int): Coordenada vertical de la celda.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._dibujar_marcador_destino(60, 0)  # doctest: +SKIP
+        """
         self._dibujar_etiqueta_marcador(x, y, "Meta", COLOR_DESTINO)
         radio = max(8, self.tam_celda // 6)
         centro = (x + self.tam_celda - radio - 4, y + max(24, self.tam_celda // 2))
@@ -504,6 +859,18 @@ class Visualizador:
         pygame.draw.polygon(self.ventana, (116, 73, 12), estrella)
 
     def _dibujar_camino(self, camino, paso_actual):
+        """Resalta el tramo recorrido de una solución.
+
+        Args:
+            camino (Sequence[tuple[int, int]] | None): Ruta calculada.
+            paso_actual (int): Índice del último paso alcanzado.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._dibujar_camino([(0, 0), (0, 1)], 1)  # doctest: +SKIP
+        """
         if not camino or paso_actual >= len(camino):
             return
 
@@ -530,6 +897,19 @@ class Visualizador:
         self.ventana.blit(overlay, (0, 0))
 
     def _direccion_a_angulo(self, origen, destino):
+        """Convierte un movimiento entre celdas en un ángulo de sprite.
+
+        Args:
+            origen (tuple[int, int]): Posición de partida.
+            destino (tuple[int, int]): Posición contigua de llegada.
+
+        Returns:
+            int: Ángulo en grados para orientar el taxi.
+
+        Example:
+            >>> visualizador._direccion_a_angulo((0, 0), (0, 1))
+            -90
+        """
         delta_fila = destino[0] - origen[0]
         delta_columna = destino[1] - origen[1]
         if delta_fila < 0:
@@ -543,13 +923,57 @@ class Visualizador:
         return 0
 
     def _interpolar_angulo(self, origen, destino, progreso):
+        """Interpola dos ángulos usando el giro más corto.
+
+        Args:
+            origen (float): Ángulo inicial en grados.
+            destino (float): Ángulo final en grados.
+            progreso (float): Fracción de interpolación.
+
+        Returns:
+            float: Ángulo interpolado.
+
+        Example:
+            >>> visualizador._interpolar_angulo(0, 90, 0.5)
+            45.0
+        """
         delta = (destino - origen + 180) % 360 - 180
         return origen + delta * progreso
 
     def _ease(self, progreso):
+        """Aplica una curva suave de aceleración y desaceleración.
+
+        Args:
+            progreso (float): Fracción lineal entre 0.0 y 1.0.
+
+        Returns:
+            float: Progreso suavizado con una función *smoothstep*.
+
+        Example:
+            >>> visualizador._ease(0.5)
+            0.5
+        """
         return progreso * progreso * (3 - 2 * progreso)
 
     def _estado_taxi(self, camino, paso_actual, progreso):
+        """Calcula la posición y orientación interpoladas del taxi.
+
+        Args:
+            camino (Sequence[tuple[int, int]]): Ruta del taxi.
+            paso_actual (int): Índice de la celda de origen del tramo.
+            progreso (float): Avance del tramo entre 0.0 y 1.0.
+
+        Returns:
+            dict[str, tuple[float, float] | float] | None: Centro y ángulo del
+            taxi, o ``None`` si no hay camino.
+
+        Example:
+            >>> estado = visualizador._estado_taxi(  # doctest: +SKIP
+            ...     [(0, 0), (0, 1)], 0, 0.5
+            ... )
+            >>> "centro" in estado  # doctest: +SKIP
+            True
+        """
         if not camino:
             return None
 
@@ -586,6 +1010,20 @@ class Visualizador:
         }
 
     def _dibujar_taxi(self, taxi_estado):
+        """Dibuja el taxi rotado y su sombra.
+
+        Args:
+            taxi_estado (Mapping[str, object]): Centro y ángulo calculados por
+                ``_estado_taxi``.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador._dibujar_taxi({  # doctest: +SKIP
+            ...     "centro": (30, 30), "angulo": 0
+            ... })
+        """
         centro_x, centro_y = taxi_estado["centro"]
         angulo = taxi_estado["angulo"]
         taxi_size = self.img_taxi.get_width()
@@ -602,6 +1040,19 @@ class Visualizador:
         self.ventana.blit(taxi_rotado, taxi_rect.topleft)
 
     def dibujar_grid(self, camino=None, paso_actual=0, taxi_progreso=0.0):
+        """Dibuja el mapa, los pasajeros, el camino y el taxi.
+
+        Args:
+            camino (Sequence[tuple[int, int]] | None): Solución que se resalta.
+            paso_actual (int): Última posición alcanzada en la solución.
+            taxi_progreso (float): Avance interpolado al siguiente paso.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador.dibujar_grid([(0, 0), (0, 1)], 0, 0.5)  # doctest: +SKIP
+        """
         pygame.draw.rect(self.ventana, COLOR_FONDO, self.viewport, border_radius=24)
 
         pasajeros_recogidos = set()
@@ -636,6 +1087,22 @@ class Visualizador:
                 self._dibujar_taxi(taxi_estado)
 
     def animar_camino(self, camino, resultado, nombre_algoritmo, delay=300):
+        """Anima una solución cuando el visualizador controla la ventana.
+
+        Args:
+            camino (Sequence[tuple[int, int]]): Ruta que se animará.
+            resultado (Mapping[str, object]): Métricas mostradas al finalizar.
+            nombre_algoritmo (str): Nombre incluido en el reporte.
+            delay (int): Milisegundos de espera entre pasos.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador.animar_camino(  # doctest: +SKIP
+            ...     camino, resultado, "A*", delay=100
+            ... )
+        """
         if not camino or not self.own_display:
             return
 
@@ -661,6 +1128,17 @@ class Visualizador:
         self.mostrar_reporte(resultado, nombre_algoritmo)
 
     def mostrar_exito(self, duracion=1500):
+        """Muestra temporalmente un aviso de llegada a la meta.
+
+        Args:
+            duracion (int): Tiempo visible en milisegundos.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador.mostrar_exito(500)  # doctest: +SKIP
+        """
         overlay = pygame.Surface(self.ventana.get_size(), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 160))
         fuente = pygame.font.SysFont("Arial", 36, bold=True)
@@ -677,6 +1155,18 @@ class Visualizador:
         pygame.time.wait(duracion)
 
     def mostrar_reporte(self, resultado, nombre_algoritmo):
+        """Muestra un modal interactivo con las métricas de búsqueda.
+
+        Args:
+            resultado (Mapping[str, object]): Métricas de la solución.
+            nombre_algoritmo (str): Nombre del algoritmo ejecutado.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador.mostrar_reporte(resultado, "A*")  # doctest: +SKIP
+        """
         fuente_titulo = pygame.font.SysFont("Arial", 26, bold=True)
         fuente_texto = pygame.font.SysFont("Arial", 20)
         boton = pygame.Rect(self.viewport.centerx - 80, self.viewport.centery + 140, 160, 44)
@@ -724,6 +1214,14 @@ class Visualizador:
                     return
 
     def esperar_cierre(self):
+        """Mantiene abierta la ventana propia hasta recibir un evento de cierre.
+
+        Returns:
+            None.
+
+        Example:
+            >>> visualizador.esperar_cierre()  # doctest: +SKIP
+        """
         if not self.own_display:
             return
 

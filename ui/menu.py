@@ -1,6 +1,26 @@
 import pygame
 
 def dibujar_boton(ventana, texto,x,y,ancho,alto,color,color_texto=(0,0,0)):
+    """Dibuja un botón rectangular centrando su etiqueta.
+
+    Args:
+        ventana (pygame.Surface): Superficie de destino.
+        texto (str): Etiqueta visible.
+        x (int): Coordenada horizontal.
+        y (int): Coordenada vertical.
+        ancho (int): Ancho del botón en píxeles.
+        alto (int): Alto del botón en píxeles.
+        color (tuple[int, int, int]): Color de fondo RGB.
+        color_texto (tuple[int, int, int]): Color RGB de la etiqueta.
+
+    Returns:
+        pygame.Rect: Rectángulo usado para dibujar y detectar clics.
+
+    Example:
+        >>> superficie = pygame.Surface((200, 80))
+        >>> dibujar_boton(superficie, "Aceptar", 0, 0, 120, 40, (0, 0, 0))
+        <rect(0, 0, 120, 40)>
+    """
     rect = pygame.Rect(x,y,ancho,alto)
     pygame.draw.rect(ventana,color,rect,border_radius=8)
     pygame.draw.rect(ventana, (80, 80, 80), rect, 2, border_radius=8)
@@ -15,6 +35,21 @@ def dibujar_boton(ventana, texto,x,y,ancho,alto,color,color_texto=(0,0,0)):
     return rect
 
 def mostrar_menu(ventana,ancho,alto):
+    """Muestra el menú para elegir una familia de búsqueda.
+
+    Args:
+        ventana (pygame.Surface): Superficie principal de la aplicación.
+        ancho (int): Ancho disponible en píxeles.
+        alto (int): Alto disponible en píxeles.
+
+    Returns:
+        str: ``"no_informada"`` o ``"informada"`` según el botón pulsado.
+
+    Example:
+        >>> categoria = mostrar_menu(ventana, 800, 600)  # doctest: +SKIP
+        >>> categoria in {"no_informada", "informada"}  # doctest: +SKIP
+        True
+    """
     fuente_titulo = pygame.font.SysFont("Arial",28, bold =True)
     
     ejecutando = True
@@ -44,6 +79,24 @@ def mostrar_menu(ventana,ancho,alto):
                 if btn_inf.collidepoint(event.pos):
                     return "informada"
 def mostrar_submenu(ventana, ancho, alto, categoria):
+    """Muestra los algoritmos disponibles para una categoría.
+
+    Args:
+        ventana (pygame.Surface): Superficie principal de la aplicación.
+        ancho (int): Ancho disponible en píxeles.
+        alto (int): Alto disponible en píxeles.
+        categoria (str): Familia ``"no_informada"`` o ``"informada"``.
+
+    Returns:
+        str: Clave del algoritmo seleccionado.
+
+    Example:
+        >>> clave = mostrar_submenu(
+        ...     ventana, 800, 600, "informada"
+        ... )  # doctest: +SKIP
+        >>> clave in {"avara", "a_estrella"}  # doctest: +SKIP
+        True
+    """
     fuente_titulo = pygame.font.SysFont("Arial", 24, bold=True)
 
     if categoria == "no_informada":

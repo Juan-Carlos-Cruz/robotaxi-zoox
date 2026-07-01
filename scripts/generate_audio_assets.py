@@ -12,10 +12,35 @@ ROOT = Path(__file__).resolve().parents[1] / "audio"
 
 
 def clamp(sample: float) -> float:
+    """Limita una muestra de audio al intervalo normalizado.
+
+    Args:
+        sample (float): Amplitud que se desea limitar.
+
+    Returns:
+        float: Valor entre -1.0 y 1.0.
+
+    Example:
+        >>> clamp(1.5)
+        1.0
+    """
     return max(-1.0, min(1.0, sample))
 
 
 def write_wav(path: Path, frames: list[tuple[float, float]], rate: int = RATE) -> None:
+    """Escribe muestras estéreo normalizadas en un archivo WAV de 16 bits.
+
+    Args:
+        path (Path): Archivo de salida.
+        frames (list[tuple[float, float]]): Pares de muestras izquierda/derecha.
+        rate (int): Frecuencia de muestreo en hercios.
+
+    Returns:
+        None.
+
+    Example:
+        >>> write_wav(Path("silencio.wav"), [(0.0, 0.0)])  # doctest: +SKIP
+    """
     with wave.open(str(path), "w") as wav_file:
         wav_file.setnchannels(2)
         wav_file.setsampwidth(2)
@@ -28,6 +53,24 @@ def write_wav(path: Path, frames: list[tuple[float, float]], rate: int = RATE) -
 
 
 def periodic_components(duration: float, rng: random.Random, count: int, start_hz: float, end_hz: float, gain: float) -> list[tuple[float, float, float]]:
+    """Genera componentes sinusoidales que cierran un periodo exacto.
+
+    Args:
+        duration (float): Duración del bucle en segundos.
+        rng (random.Random): Generador aleatorio reproducible.
+        count (int): Número de componentes.
+        start_hz (float): Frecuencia mínima.
+        end_hz (float): Frecuencia máxima.
+        gain (float): Escala máxima aproximada de amplitud.
+
+    Returns:
+        list[tuple[float, float, float]]: Frecuencia, amplitud y fase de cada
+        componente.
+
+    Example:
+        >>> len(periodic_components(1.0, random.Random(1), 3, 20, 40, 0.1))
+        3
+    """
     components = []
     start_index = max(1, int(start_hz * duration))
     end_index = max(start_index + 1, int(end_hz * duration))
@@ -41,24 +84,92 @@ def periodic_components(duration: float, rng: random.Random, count: int, start_h
 
 
 def periodic_noise(t: float, components: list[tuple[float, float, float]]) -> float:
+    """Suma componentes sinusoidales para producir ruido periódico.
+
+    Args:
+        t (float): Instante en segundos.
+        components (list[tuple[float, float, float]]): Frecuencias, amplitudes
+            y fases.
+
+    Returns:
+        float: Amplitud combinada en el instante indicado.
+
+    Example:
+        >>> round(periodic_noise(0.0, [(1.0, 0.5, 0.0)]), 4)
+        0.0
+    """
     return sum(amplitude * math.sin(math.tau * frequency * t + phase) for frequency, amplitude, phase in components)
 
 
 def triangle_wave(frequency: float, t: float, phase: float = 0.0) -> float:
+    """Calcula una onda triangular normalizada.
+
+    Args:
+        frequency (float): Frecuencia en hercios.
+        t (float): Instante en segundos.
+        phase (float): Desfase en radianes.
+
+    Returns:
+        float: Amplitud entre -1.0 y 1.0.
+
+    Example:
+        >>> round(triangle_wave(1.0, 0.0), 4)
+        0.0
+    """
     return (2.0 / math.pi) * math.asin(math.sin(math.tau * frequency * t + phase))
 
 
 def soft_clip(value: float, drive: float = 1.0) -> float:
+    """Aplica saturación suave mediante una tangente hiperbólica.
+
+    Args:
+        value (float): Señal de entrada.
+        drive (float): Intensidad de la saturación.
+
+    Returns:
+        float: Señal limitada suavemente.
+
+    Example:
+        >>> round(soft_clip(0.0), 4)
+        0.0
+    """
     return math.tanh(value * drive)
 
 
 def envelope(t: float, duration: float, attack: float, release: float) -> float:
+    """Calcula una envolvente lineal de ataque y liberación.
+
+    Args:
+        t (float): Instante dentro del sonido.
+        duration (float): Duración total.
+        attack (float): Duración del ataque.
+        release (float): Duración de la liberación.
+
+    Returns:
+        float: Ganancia entre 0.0 y 1.0.
+
+    Example:
+        >>> envelope(0.5, 1.0, 0.1, 0.1)
+        1.0
+    """
     attack_gain = min(1.0, t / max(attack, 1e-6))
     release_gain = min(1.0, (duration - t) / max(release, 1e-6))
     return max(0.0, min(attack_gain, release_gain, 1.0))
 
 
 def build_lofi_ambient(duration: float = 12.0) -> list[tuple[float, float]]:
+    """Sintetiza un bucle estéreo de música ambiente lo-fi.
+
+    Args:
+        duration (float): Duración en segundos.
+
+    Returns:
+        list[tuple[float, float]]: Muestras estéreo normalizadas.
+
+    Example:
+        >>> len(build_lofi_ambient(0.01))
+        220
+    """
     rng = random.Random(11)
     chords = [
         (220.00, 261.63, 329.63),
@@ -131,6 +242,18 @@ def build_lofi_ambient(duration: float = 12.0) -> list[tuple[float, float]]:
 
 
 def build_engine_loop(duration: float = 2.0) -> list[tuple[float, float]]:
+    """Sintetiza un bucle estéreo de motor, carretera y viento.
+
+    Args:
+        duration (float): Duración en segundos.
+
+    Returns:
+        list[tuple[float, float]]: Muestras estéreo del desplazamiento.
+
+    Example:
+        >>> len(build_engine_loop(0.01))
+        220
+    """
     rng = random.Random(23)
     engine_cycle = 73.5
     road_left = periodic_components(duration, rng, 26, 180.0, 1500.0, 0.0048)
@@ -167,6 +290,22 @@ def build_engine_loop(duration: float = 2.0) -> list[tuple[float, float]]:
 
 
 def build_horn(duration: float, freqs: tuple[float, float], pulse_count: int, gap: float, harshness: float) -> list[tuple[float, float]]:
+    """Sintetiza una bocina con uno o varios pulsos.
+
+    Args:
+        duration (float): Duración total en segundos.
+        freqs (tuple[float, float]): Frecuencias principales.
+        pulse_count (int): Cantidad de pulsos.
+        gap (float): Silencio entre pulsos en segundos.
+        harshness (float): Ganancia del segundo armónico.
+
+    Returns:
+        list[tuple[float, float]]: Muestras estéreo de la bocina.
+
+    Example:
+        >>> len(build_horn(0.1, (380, 478), 1, 0.01, 0.1))
+        2205
+    """
     total_samples = int(duration * RATE)
     pulse_length = (duration - gap * (pulse_count - 1)) / pulse_count
     frames = []
@@ -203,6 +342,18 @@ def build_horn(duration: float, freqs: tuple[float, float], pulse_count: int, ga
 
 
 def build_ui_click(duration: float = 0.11) -> list[tuple[float, float]]:
+    """Sintetiza el efecto corto de clic de la interfaz.
+
+    Args:
+        duration (float): Duración en segundos.
+
+    Returns:
+        list[tuple[float, float]]: Muestras estéreo del efecto.
+
+    Example:
+        >>> len(build_ui_click(0.01))
+        220
+    """
     total_samples = int(duration * RATE)
     frames = []
 
@@ -221,6 +372,15 @@ def build_ui_click(duration: float = 0.11) -> list[tuple[float, float]]:
 
 
 def build_finish_jingle() -> list[tuple[float, float]]:
+    """Sintetiza la melodía ascendente de finalización.
+
+    Returns:
+        list[tuple[float, float]]: Muestras estéreo de la melodía.
+
+    Example:
+        >>> len(build_finish_jingle()) > 0
+        True
+    """
     note_specs = [
         (659.25, 0.11, 0.00),
         (783.99, 0.11, 0.09),
@@ -257,6 +417,14 @@ def build_finish_jingle() -> list[tuple[float, float]]:
 
 
 def main() -> None:
+    """Genera y guarda todos los recursos de audio del proyecto.
+
+    Returns:
+        None.
+
+    Example:
+        >>> main()  # doctest: +SKIP
+    """
     ROOT.mkdir(exist_ok=True)
     write_wav(ROOT / "lofi_ambient.wav", build_lofi_ambient())
     write_wav(ROOT / "road_loop.wav", build_engine_loop())
